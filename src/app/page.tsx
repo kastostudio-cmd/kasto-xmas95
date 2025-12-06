@@ -1,112 +1,329 @@
-import { NextResponse } from "next/server";
-import Replicate from "replicate";
+"use client";
 
-const replicate = new Replicate({
-  auth: process.env.REPLICATE_API_TOKEN as string,
-});
+import { useState } from "react";
 
-type GenerateRequestBody = {
-  userImage: string;
-  vibe: "PARTY" | "HOME" | "COUPLE";
-};
+const UNLOCK_CODE = "XMAS95";
+const TURKEY_URL = "https://iyzi.link/AKYrkg";
+const GLOBAL_URL = "https://kasto.gumroad.com/l/xmas95";
 
-export async function POST(req: Request) {
-  try {
-    const body = (await req.json()) as GenerateRequestBody;
-    const { userImage, vibe } = body;
+export default function Home() {
+  const [selectedMode, setSelectedMode] = useState<"party" | "home" | "couple">(
+    "party"
+  );
+  const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [outputUrl, setOutputUrl] = useState<string | null>(null);
+  const [status, setStatus] = useState("Status: Ready…");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
+  const [codeInput, setCodeInput] = useState("");
 
-    if (!userImage) {
-      return NextResponse.json(
-        { error: "No image provided" },
-        { status: 400 }
-      );
-    }
-
-    const identity =
-      "The person must look as close as possible to the input photo. Preserve identity, age, gender, face shape, bone structure, eyes, nose, lips, jawline, ears, skin tone, hair color, haircut and hairline. Do not change the hair length or general hairstyle. Do not change teeth shape or size. No beauty filter, no makeup change, no plastic surgery.";
-
-    const vintageBase =
-      "photograph from Christmas 1995 shot on cheap 35mm film, slightly soft focus, visible film grain, mild halation around lights, low contrast, slightly faded colors, not HDR, not digital, not modern smartphone, candid snapshot, flash photography.";
-
-    let prompt: string;
-
-    if (vibe === "PARTY") {
-      prompt = [
-        identity,
-        vintageBase,
-        "office Christmas party background, desks, office chairs, tinsel and hanging string lights, plastic cups, paper plates, coworkers in the distance as soft silhouettes, shallow depth of field, subject at the front and center looking at the camera, wearing a casual mid-90s office party outfit such as a patterned sweater or loose shirt with sleeves rolled up. Clothing style must vary naturally between generations, not the same outfit every time.",
-      ].join(" ");
-    } else if (vibe === "COUPLE") {
-      prompt = [
-        identity,
-        vintageBase,
-        "warm Christmas bar or cafe interior background with fairy lights, candles, wooden tables and red and green decorations, shallow depth of field, subject framed waist-up as if a friend took a candid photo inside a 1995 bar. Clothing should look like casual mid-90s nightlife fashion: shirts, knitwear, jackets, natural variety in colors and textures, not always red sweaters.",
-      ].join(" ");
-    } else {
-      prompt = [
-        identity,
-        vintageBase,
-        "1995 family living room on Christmas Eve, real Christmas tree with multicolored lights behind the subject, CRT television, old wooden furniture, patterned carpet, framed family photos, warm tungsten lighting, subject sitting or standing comfortably in front of the tree, wearing a typical mid-90s home outfit such as a simple sweater, turtleneck or long-sleeve top with natural color variety, not forced red only clothing.",
-      ].join(" ");
-    }
-
-    const prediction = await replicate.predictions.create({
-      version:
-        "43d309c37ab4e62361e5e29b8e9e867fb2dcbcec77ae91206a8d95ac5dd451a0",
-      input: {
-        width: 768,
-        height: 960,
-        prompt,
-        main_face_image: userImage,
-        negative_prompt:
-          "cartoon, anime, painting, illustration, deformed face, ugly teeth, extra eyes, extra nose, multiple faces, wrong anatomy, low quality, text, watermark, logo, signature, airbrushed skin, overly smooth skin, glossy beauty ad, heavy makeup, fashion editorial, studio portrait",
-        num_outputs: 1,
-        guidance_scale: 4.0,
-        num_inference_steps: 24,
-        id_weight: 1.8,
-        true_cfg: 1.3,
-      },
-    });
-
-    let result = await replicate.predictions.get(prediction.id);
-
-    while (
-      result.status === "starting" ||
-      result.status === "processing" ||
-      result.status === "queued"
-    ) {
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-      result = await replicate.predictions.get(prediction.id);
-    }
-
-    if (result.status !== "succeeded") {
-      return NextResponse.json(
-        { error: "Generation failed." },
-        { status: 500 }
-      );
-    }
-
-    let imageUrl: string | null = null;
-
-    if (Array.isArray(result.output) && result.output.length > 0) {
-      imageUrl = String(result.output[0]);
-    } else if (typeof result.output === "string") {
-      imageUrl = result.output;
-    }
-
-    if (!imageUrl) {
-      return NextResponse.json(
-        { error: "No image generated." },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ output: imageUrl });
-  } catch (err) {
-    console.error("API error:", err);
-    return NextResponse.json(
-      { error: "Generation failed." },
-      { status: 500 }
-    );
+  function setStatusMessage(
+    message: string,
+    opts?: { error?: boolean; loading?: boolean }
+  ) {
+    setStatus(message);
+    setIsError(Boolean(opts?.error));
+    setIsLoading(Boolean(opts?.loading));
   }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) {
+      setFile(null);
+      setPreviewUrl(null);
+      return;
+    }
+    setFile(f);
+    const localUrl = URL.createObjectURL(f);
+    setPreviewUrl(localUrl);
+    setOutputUrl(null);
+    setStatusMessage("Status: Photo loaded. Ready to generate.");
+  }
+
+  function handleVibeClick(mode: "party" | "home" | "couple") {
+    setSelectedMode(mode);
+    if (mode === "party") {
+      setStatusMessage("Status: Mode set to Party '95.");
+    } else if (mode === "home") {
+      setStatusMessage("Status: Mode set to Home '95.");
+    } else {
+      setStatusMessage("Status: Mode set to Couple '95.");
+    }
+  }
+
+  async function fileToDataUrl(f: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(f);
+    });
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (!file) {
+      setStatusMessage("Status: Please upload a photo first.", { error: true });
+      return;
+    }
+
+    try {
+      setStatusMessage("Status: Generating Xmas95 photo…", { loading: true });
+      const userImage = await fileToDataUrl(file);
+
+      let vibeKey: "PARTY" | "HOME" | "COUPLE" = "HOME";
+      if (selectedMode === "party") vibeKey = "PARTY";
+      if (selectedMode === "couple") vibeKey = "COUPLE";
+
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          userImage,
+          vibe: vibeKey
+        })
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => null);
+        const message = errJson?.error || "Unknown error from API";
+        setStatusMessage("Status: " + message, { error: true });
+        return;
+      }
+
+      const data = await res.json();
+      if (!data || !data.output) {
+        setStatusMessage("Status: No image returned from API.", {
+          error: true
+        });
+        return;
+      }
+
+      setOutputUrl(data.output as string);
+      setStatusMessage("Status: Xmas95 photo ready. Unlock to download.");
+    } catch (err) {
+      setStatusMessage("Status: Generation failed. Check console.", {
+        error: true
+      });
+      console.error(err);
+    }
+  }
+
+  function handleUnlock() {
+    if (codeInput.trim().toUpperCase() === UNLOCK_CODE) {
+      setUnlocked(true);
+      setStatusMessage("Status: Unlocked. You can download your photo now.");
+    } else {
+      setUnlocked(false);
+      setStatusMessage("Status: Invalid code. Please check your purchase.", {
+        error: true
+      });
+    }
+  }
+
+  function handleDownload() {
+    if (!outputUrl) return;
+    const link = document.createElement("a");
+    link.href = outputUrl;
+    link.download = "xmas95-photo.webp";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  const displayImage = outputUrl || previewUrl;
+
+  let previewLabel = "Preview: Party '95";
+  if (selectedMode === "home") previewLabel = "Preview: Home '95";
+  if (selectedMode === "couple") previewLabel = "Preview: Couple '95";
+
+  const statusClasses = [
+    "status-text",
+    isError ? "status-error" : "",
+    isLoading ? "status-loading" : ""
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <div className="window">
+      <div className="title-bar">
+        <div className="title-left">
+          <span className="title-text">XMAS 95.exe - Retro Photo Studio</span>
+          <span className="title-sub">KASTO Studio · Alpha · Party / Home / Couple</span>
+        </div>
+        <div className="close-btn">X</div>
+      </div>
+
+      <div className="content">
+        <div className="hero-section">
+          <div className="pixel-logo">🎄 XMAS 95</div>
+          <div className="subtitle">
+            Transform one photo into a 1995 Christmas reality.
+          </div>
+          <div className="kasto-tag">crafted by KASTO Studio · Win95 shell</div>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <fieldset>
+            <legend>Step 1: Upload Photo</legend>
+            <input type="file" accept="image/*" onChange={handleFileChange} />
+            <div className="hint">
+              Party &amp; Home: single person photo. Couple: two people in the same
+              frame.
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Step 2: Select Scene</legend>
+            <div className="vibe-list">
+              <div
+                className={`vibe-item ${
+                  selectedMode === "party" ? "selected" : ""
+                }`}
+                onClick={() => handleVibeClick("party")}
+              >
+                <div className="vibe-title">🎉 Party &apos;95</div>
+                <div className="vibe-desc">
+                  Christmas party vibes, flash photography, festive atmosphere. Single
+                  person.
+                </div>
+              </div>
+              <div
+                className={`vibe-item ${
+                  selectedMode === "home" ? "selected" : ""
+                }`}
+                onClick={() => handleVibeClick("home")}
+              >
+                <div className="vibe-title">🏠 Home &apos;95</div>
+                <div className="vibe-desc">
+                  Cozy living room, Christmas tree, warm lights. Single person.
+                </div>
+              </div>
+              <div
+                className={`vibe-item ${
+                  selectedMode === "couple" ? "selected" : ""
+                }`}
+                onClick={() => handleVibeClick("couple")}
+              >
+                <div className="vibe-title">💑 Couple &apos;95</div>
+                <div className="vibe-desc">
+                  Romantic Christmas setting for two people.
+                </div>
+              </div>
+            </div>
+          </fieldset>
+
+          <button
+            type="submit"
+            className="win-btn"
+            disabled={isLoading || !file}
+          >
+            {isLoading ? "Generating…" : "⭐ GENERATE XMAS95 PHOTO"}
+          </button>
+
+          <div className="preview-wrapper">
+            <div className="preview-label-row">
+              <span className="preview-mode-tag">{previewLabel}</span>
+              <span style={{ fontSize: "10px" }}>Output (4:5)</span>
+            </div>
+            <div className="preview-box">
+              <div className="preview-inner-frame" />
+              {displayImage ? (
+                <img
+                  src={displayImage}
+                  className="preview-image"
+                  alt="Preview"
+                  style={outputUrl && !unlocked ? { filter: "blur(3px)" } : undefined}
+                />
+              ) : (
+                <div className="preview-placeholder">
+                  No output yet. Upload a photo and click “Generate Xmas95 Photo”.
+                </div>
+              )}
+
+              {outputUrl && !unlocked && (
+                <div className="paywall-overlay">
+                  <div
+                    style={{
+                      fontSize: 12,
+                      marginBottom: 8,
+                      fontWeight: 600
+                    }}
+                  >
+                    Unlock your full-resolution Xmas95 photo
+                  </div>
+
+                  <div className="price-row">
+                    <a
+                      href={TURKEY_URL}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="buy-btn"
+                    >
+                      <span>Türkiye</span>
+                      <span style={{ fontSize: 10 }}>Pay with iyzico</span>
+                    </a>
+                    <a
+                      href={GLOBAL_URL}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="buy-btn"
+                    >
+                      <span>Global</span>
+                      <span style={{ fontSize: 10 }}>Pay with Gumroad</span>
+                    </a>
+                  </div>
+
+                  <div style={{ fontSize: 10, marginBottom: 4 }}>
+                    After purchase you will receive the unlock code.
+                  </div>
+
+                  <div className="code-input-area">
+                    <input
+                      className="code-input"
+                      placeholder="CODE"
+                      value={codeInput}
+                      onChange={(e) => setCodeInput(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="unlock-btn"
+                      onClick={handleUnlock}
+                    >
+                      UNLOCK
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {outputUrl && (
+              <button
+                type="button"
+                className="win-btn"
+                onClick={handleDownload}
+                disabled={!unlocked}
+                style={{ marginTop: 6 }}
+              >
+                {unlocked
+                  ? "⬇ DOWNLOAD XMAS95 PHOTO"
+                  : "Enter unlock code to download"}
+              </button>
+            )}
+          </div>
+
+          <div className="status-bar">
+            <span className={statusClasses}>{status}</span>
+            <span className="status-brand">KASTO Studio · XMAS 95</span>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 }
