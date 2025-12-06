@@ -1,138 +1,117 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import Replicate from "replicate";
 
+export const runtime = "nodejs";
+
 const replicate = new Replicate({
-  auth: process.env.REPLICATE_API_TOKEN || "",
+  auth: process.env.REPLICATE_API_TOKEN || ""
 });
 
-type Vibe = "OFFICE" | "HOME" | "COUPLE";
-
-type GenerateRequestBody = {
-  userImage: string;
-  vibe: Vibe;
-};
-
-const MODEL_VERSION =
-  "43d309c37ab4e62361e5e29b8e9e867fb2dcbcec77ae91206a8d95ac5dd451a0";
-
-const IDENTITY_PROMPT =
-  "The generated person must match the person in the input photo as closely as possible. Preserve face shape, facial features, age, skin tone, eye color, hairstyle, hair length and hair color. Do not change the haircut or hair length. Do not make a new character. Do not beautify or rejuvenate too much.";
-
-const VINTAGE_BASE =
-  "1995 Christmas photograph, shot on 35mm film, subtle halation, warm film grain, slight vignette, soft focus, gentle motion blur, polaroid-like look, not digital, not HDR, not ultra sharp, not modern phone camera.";
+type Vibe = "PARTY" | "HOME" | "COUPLE";
 
 function buildPrompt(vibe: Vibe) {
-  if (vibe === "OFFICE") {
-    return [
-      VINTAGE_BASE,
-      "single person in the foreground, crowded office Christmas party in 1995, people blurred in the background, fluorescent office lights, ugly Christmas sweaters, disposable cups, cozy but slightly chaotic atmosphere, shallow depth of field.",
-      IDENTITY_PROMPT,
-    ].join(" ");
+  const base =
+    "photograph of the same person from the reference photo, 1990s christmas style, warm tungsten lights, soft lens, vintage film look, subtle blur, polaroid feel, film grain, cozy atmosphere, christmas tree with lights in the background, realistic photo, 4:5 portrait";
+
+  if (vibe === "PARTY") {
+    return (
+      base +
+      ", single person only, office christmas party background, other people very softly blurred far behind, upper body framed, subject in the center, ugly christmas sweater or festive knit, no extra faces next to the subject"
+    );
   }
 
-  if (vibe === "COUPLE") {
-    return [
-      VINTAGE_BASE,
-      "romantic 1995 Christmas living room scene, couple sitting close together, heads close, warm tungsten lamps, Christmas tree lights bokeh behind them, soft dreamy glow, cozy intimate mood.",
-      IDENTITY_PROMPT,
-      "If there are two people in the input, keep them as a real couple: left person stays on the left, right person stays on the right. Do not duplicate the same face.",
-    ].join(" ");
+  if (vibe === "HOME") {
+    return (
+      base +
+      ", single person only, home living room with christmas tree, sitting on sofa or armchair, no other people in the frame, cozy home interior, presents around the tree"
+    );
   }
 
-  return [
-    VINTAGE_BASE,
-    "single person at home in front of a real Christmas tree with multicolored lights, 90s living room, CRT television, patterned carpet, framed photos on the wall, gifts under the tree, warm tungsten light, nostalgic family photo.",
-    IDENTITY_PROMPT,
-  ].join(" ");
+  return (
+    base +
+    ", two distinct people from the reference photo, man and woman side by side, shoulders touching, both clearly visible, romantic christmas evening, warm lights, bokeh, do not merge or duplicate faces"
+  );
 }
 
-const NEGATIVE_PROMPT =
-  "cartoon, anime, painting, illustration, 3d render, cgi, deformed face, distorted anatomy, extra eyes, extra nose, multiple faces, wrong gender, different person, text, watermark, logo, ultra sharp digital photo, iphone photo, hdr, oversharpened, glamour portrait, beauty filter, heavy makeup, exaggerated smoothing";
+const negativePrompt =
+  "cartoon, illustration, painting, anime, deformed face, distorted eyes, plastic skin, heavy retouch, glamour studio, extra people, strangers, duplicated face, merged faces, big age change, big weight change, changed jawline, changed nose, changed lips, changed teeth, different hairstyle, different hair color, short hair instead of long, bangs if not in original, hat, glasses unless already present, low quality, noisy jpeg";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     if (!process.env.REPLICATE_API_TOKEN) {
       return NextResponse.json(
-        { error: "Missing REPLICATE_API_TOKEN on server." },
+        { error: "Server configuration error." },
         { status: 500 }
       );
     }
 
-    const body = (await req.json()) as GenerateRequestBody;
-    const { userImage, vibe } = body;
+    const body = await req.json();
+    const userImage = body?.userImage as string | undefined;
+    const vibe = body?.vibe as Vibe | undefined;
 
-    if (!userImage) {
+    if (!userImage || !vibe) {
       return NextResponse.json(
-        { error: "No image provided." },
+        { error: "Missing image or mode." },
         { status: 400 }
       );
     }
 
-    const prompt = buildPrompt(vibe || "HOME");
+    const input = {
+      prompt: buildPrompt(vibe),
+      negative_prompt: negativePrompt,
+      image: userImage,
+      strength: 0.42,
+      guidance_scale: 3.5,
+      num_inference_steps: 26,
+      output_quality: 95,
+      aspect_ratio: "4:5"
+    };
 
     const prediction = await replicate.predictions.create({
-      version: MODEL_VERSION,
-      input: {
-        width: 768,
-        height: 960,
-        prompt,
-        main_face_image: userImage,
-        negative_prompt: NEGATIVE_PROMPT,
-        num_outputs: 1,
-        guidance_scale: 7,
-        num_inference_steps: 32,
-        id_weight: 1.35,
-        true_cfg: 1.3,
-      },
+      model: "black-forest-labs/flux-1.1-pro",
+      input
     });
 
-    let result: any = await replicate.predictions.get(prediction.id);
-    let status: string = String(result.status);
+    let result = await replicate.predictions.get(prediction.id);
+
+    const startedAt = Date.now();
+    const timeoutMs = 60_000;
 
     while (
-      status === "starting" ||
-      status === "processing" ||
-      status === "queued"
+      ["starting", "processing", "queued"].includes(result.status as string)
     ) {
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-      result = await replicate.predictions.get(result.id as string);
-      status = String(result.status);
+      if (Date.now() - startedAt > timeoutMs) {
+        return NextResponse.json(
+          { error: "Generation timed out. Please try again." },
+          { status: 504 }
+        );
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      result = await replicate.predictions.get(prediction.id);
     }
 
-    if (status === "failed") {
+    if (result.status !== "succeeded") {
       return NextResponse.json(
-        {
-          error:
-            "Generation failed: " +
-            (result.error ? String(result.error) : "Unknown Replicate error."),
-        },
+        { error: "Generation failed. Please try again." },
         { status: 500 }
       );
     }
 
-    let imageUrl: string | null = null;
+    const out = Array.isArray(result.output) ? result.output[0] : result.output;
 
-    if (Array.isArray(result.output) && result.output.length > 0) {
-      imageUrl = String(result.output[0]);
-    } else if (typeof result.output === "string") {
-      imageUrl = result.output;
-    }
-
-    if (!imageUrl) {
+    if (!out || typeof out !== "string") {
       return NextResponse.json(
-        { error: "No image returned from Replicate." },
+        { error: "Empty image result from server." },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ output: imageUrl });
-  } catch (error: any) {
+    return NextResponse.json({ output: out });
+  } catch (error) {
+    console.error("Xmas95 /api/generate error:", error);
     return NextResponse.json(
-      {
-        error:
-          "Server error: " +
-          (error?.message || "Unknown error while calling Replicate."),
-      },
+      { error: "Unexpected server error." },
       { status: 500 }
     );
   }
