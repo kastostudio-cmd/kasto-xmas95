@@ -1,80 +1,153 @@
 import { NextResponse } from "next/server";
-import Replicate from "replicate";
 
-const replicate = new Replicate({
-  auth: process.env.REPLICATE_API_TOKEN,
-});
+const REPLICATE_API_URL = "https://api.replicate.com/v1/predictions";
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    const { userImage, vibe } = body;
+type GenerateRequestBody = {
+  userImage: string;
+  vibe: "PARTY" | "HOME" | "COUPLE";
+};
 
-    let prompt = "";
-    let negativePrompt = "deformed face, distorted face, extra people, duplicate body, distorted hair, bad anatomy, blurry face, morphed features, wrong face, different person, multiple people";
+function buildPrompt(vibe: "PARTY" | "HOME" | "COUPLE") {
+  const identity =
+    "The generated person must look exactly like the person in the input image. Preserve identity, age, gender, face shape, skin tone, eyes, nose, mouth and hairstyle. Do not change the person, do not make a new character. Keep the face and hair as similar as possible.";
 
-    const identityLock = "Exact same face, same hairstyle, same facial features, no morphing, preserve identity perfectly.";
-    const vintageStyle = "Shot on Kodak Gold 200 disposable camera, 1995 aesthetic, warm film tones, subtle film grain, soft flash lighting, slight light leak, vintage color grading, nostalgic atmosphere";
+  const filmBase =
+    "1995 Christmas photograph, 35mm film scan, disposable camera flash, visible film grain, slight blur, polaroid style border, soft focus, analog look, not HDR, not digital phone camera.";
 
-    if (vibe === "PARTY") {
-      prompt = `${identityLock} Single person only, one person, solo portrait. Christmas office party in 1995, fluorescent office lighting with camera flash, wearing festive clothing, tinsel and decorations in blurred background, coworkers blurred in far background. ${vintageStyle}`;
-      negativePrompt += ", crowd in foreground, multiple faces";
-    } else if (vibe === "COUPLE") {
-      prompt = `${identityLock} Exactly two people, romantic couple portrait. Cozy Christmas setting in 1995, warm intimate lighting, Christmas tree bokeh lights in background, romantic atmosphere, close together. ${vintageStyle}`;
-      negativePrompt += ", single person, extra people, third person";
-    } else {
-      prompt = `${identityLock} Single person only, one person, solo portrait. Cozy home Christmas Eve in 1995, warm tungsten living room lighting, Christmas tree glow, comfortable home setting, relaxed pose. ${vintageStyle}`;
-      negativePrompt += ", crowd, multiple faces, family group";
-    }
+  if (vibe === "PARTY") {
+    return [
+      filmBase,
+      "crowded office Christmas party, subject close to camera, background full of coworkers, fluorescent office lights, tinsel decorations, ugly Christmas sweaters, shallow depth of field.",
+      identity
+    ].join(" ");
+  }
 
-    console.log("Generating with prompt:", prompt);
+  if (vibe === "COUPLE") {
+    return [
+      filmBase,
+      "romantic Christmas party scene with two people in the frame, warm fairy lights and garlands in the background, cozy intimate feeling, subtle glow.",
+      identity
+    ].join(" ");
+  }
 
-    const prediction = await replicate.predictions.create({
-      version: "43d309c37ab4e62361e5e29b8e9e867fb2dcbcec77ae91206a8d95ac5dd451a0",
+  return [
+    filmBase,
+    "cozy 1995 family living room, real Christmas tree with multicolored lights, CRT television, patterned carpet, framed photos on the wall, gifts under the tree, warm tungsten lighting.",
+    identity
+  ].join(" ");
+}
+
+async function createPrediction(body: GenerateRequestBody, token: string) {
+  const prompt = buildPrompt(body.vibe);
+
+  const res = await fetch(REPLICATE_API_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Token ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      version:
+        "43d309c37ab4e62361e5e29b8e9e867fb2dcbcec77ae91206a8d95ac5dd451a0",
       input: {
         width: 768,
         height: 960,
-        prompt: prompt,
-        negative_prompt: negativePrompt,
-        main_face_image: userImage,
+        prompt,
+        main_face_image: body.userImage,
+        negative_prompt:
+          "cartoon, anime, painting, illustration, deformed face, extra eyes, extra nose, multiple faces, wrong anatomy, low quality, text, watermark",
         num_outputs: 1,
-        guidance_scale: 4,
+        guidance_scale: 6.5,
         num_inference_steps: 28,
-        id_weight: 0.9,
-        true_cfg: 1.5
+        id_weight: 1.6,
+        true_cfg: 1.4
       }
+    })
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Replicate create error: ${res.status} ${text}`);
+  }
+
+  return res.json() as Promise<{ id: string }>;
+}
+
+async function waitForPrediction(id: string, token: string) {
+  for (let i = 0; i < 40; i++) {
+    const res = await fetch(`${REPLICATE_API_URL}/${id}`, {
+      headers: {
+        Authorization: `Token ${token}`,
+        "Content-Type": "application/json"
+      },
+      cache: "no-store"
     });
 
-    let result = await replicate.predictions.get(prediction.id);
-    
-    while (result.status !== "succeeded" && result.status !== "failed") {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      result = await replicate.predictions.get(prediction.id);
-      console.log("Status:", result.status);
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Replicate get error: ${res.status} ${text}`);
     }
 
-    if (result.status === "failed") {
-      console.log("Failed:", result.error);
-      return NextResponse.json({ error: "Generation failed: " + result.error }, { status: 500 });
+    const data = (await res.json()) as {
+      status: string;
+      output?: string[] | string | null;
+      error?: unknown;
+    };
+
+    if (data.status === "succeeded") {
+      return data.output ?? null;
     }
 
-    console.log("Result:", result.output);
+    if (data.status === "failed" || data.status === "canceled") {
+      throw new Error(`Replicate failed with status ${data.status}`);
+    }
 
-    let imageUrl = null;
-    if (Array.isArray(result.output) && result.output.length > 0) {
-      imageUrl = result.output[0];
-    } else if (typeof result.output === 'string') {
-      imageUrl = result.output;
+    await new Promise((r) => setTimeout(r, 1500));
+  }
+
+  throw new Error("Replicate timeout");
+}
+
+export async function POST(req: Request) {
+  try {
+    const token = process.env.REPLICATE_API_TOKEN;
+    if (!token) {
+      return NextResponse.json(
+        { error: "Missing REPLICATE_API_TOKEN on server" },
+        { status: 500 }
+      );
+    }
+
+    const body = (await req.json()) as GenerateRequestBody;
+
+    if (!body.userImage) {
+      return NextResponse.json(
+        { error: "No image provided" },
+        { status: 400 }
+      );
+    }
+
+    const prediction = await createPrediction(body, token);
+    const rawOutput = await waitForPrediction(prediction.id, token);
+
+    let imageUrl: string | null = null;
+
+    if (Array.isArray(rawOutput) && rawOutput.length > 0) {
+      imageUrl = String(rawOutput[0]);
+    } else if (typeof rawOutput === "string") {
+      imageUrl = rawOutput;
     }
 
     if (!imageUrl) {
-      return NextResponse.json({ error: "No image generated" }, { status: 500 });
+      return NextResponse.json(
+        { error: "No image generated" },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ output: imageUrl });
-
   } catch (err) {
-    console.error("Error:", err);
+    console.error("Generate error:", err);
     return NextResponse.json(
       { error: "Generation failed" },
       { status: 500 }
