@@ -24,8 +24,8 @@ const PROMPT_CONFIG = {
   identityWeight: 0.9,
   startStep: 4,
   trueGuidance: 2.8,
-  width: 896,
-  height: 1152,
+  width: 768,
+  height: 1024,
 };
 
 function getClientIdentifier(req: NextRequest): string {
@@ -100,6 +100,7 @@ function buildPrompt(vibe: Vibe): string {
       baseStyle,
       "a chaotic office Christmas party in the mid-90s",
       "exactly one clearly visible main person in the foreground, no other fully visible faces, all other faces cropped, turned away, or blurred",
+      "not a formal group portrait, not a posed studio shot",
       "the subject is caught mid-laugh with mouth open in a slightly unflattering way",
       "holding a cheap plastic cup with some drink almost spilling",
       "wearing an ugly oversized knitted Christmas sweater with reindeer and snowflakes",
@@ -115,6 +116,7 @@ function buildPrompt(vibe: Vibe): string {
       baseStyle,
       "a cozy but slightly messy living room on Christmas morning 1995",
       "exactly one clearly visible main person sitting in the foreground, no other fully visible people, any other people only partially visible or out of focus",
+      "not a group photo, not multiple main subjects",
       "subject sitting on an old floral patterned sofa, wrapped in a blanket, messy hair, sleepy but happy expression",
       "background: real pine tree with mismatched handmade ornaments and tinsel",
       "torn wrapping paper scattered all over the carpet",
@@ -139,6 +141,57 @@ function buildPrompt(vibe: Vibe): string {
   }
 
   return [identityLock, baseStyle].join(", ");
+}
+
+function buildNegativePrompt(vibe: Vibe): string {
+  const baseNegatives = [
+    "digital painting",
+    "illustration",
+    "cartoon",
+    "anime",
+    "3d render",
+    "plastic skin",
+    "airbrushed skin",
+    "beauty filter",
+    "instagram filter",
+    "face smoothing",
+    "professional studio lighting",
+    "softbox",
+    "rim light",
+    "modern smartphone camera",
+    "hdr",
+    "4k",
+    "8k",
+    "cinema lighting",
+    "futuristic clothes",
+    "modern interior",
+    "neon lights",
+    "cyberpunk",
+  ];
+
+  if (vibe === "PARTY" || vibe === "HOME") {
+    baseNegatives.push(
+      "group photo",
+      "large group photo",
+      "big family group",
+      "many people",
+      "multiple main subjects",
+      "several clearly visible faces in the foreground"
+    );
+  }
+
+  if (vibe === "COUPLE") {
+    baseNegatives.push(
+      "large group photo",
+      "big crowd",
+      "more than two people",
+      "wedding group shot",
+      "many people in the frame",
+      "multiple couples"
+    );
+  }
+
+  return baseNegatives.join(", ");
 }
 
 export async function POST(req: NextRequest) {
@@ -205,30 +258,7 @@ export async function POST(req: NextRequest) {
       true_guidance: PROMPT_CONFIG.trueGuidance,
       width: PROMPT_CONFIG.width,
       height: PROMPT_CONFIG.height,
-      negative_prompt: [
-        "digital painting",
-        "illustration",
-        "cartoon",
-        "anime",
-        "3d render",
-        "plastic skin",
-        "airbrushed skin",
-        "beauty filter",
-        "instagram filter",
-        "face smoothing",
-        "professional studio lighting",
-        "softbox",
-        "rim light",
-        "modern smartphone camera",
-        "hdr",
-        "4k",
-        "8k",
-        "cinema lighting",
-        "futuristic clothes",
-        "modern interior",
-        "neon lights",
-        "cyberpunk",
-      ].join(", "),
+      negative_prompt: buildNegativePrompt(vibe),
     };
 
     const output = (await replicate.run(MODEL, { input })) as unknown;
@@ -255,16 +285,17 @@ export async function POST(req: NextRequest) {
       },
       { status: 200 }
     );
-  } catch (error) {
-    if (error instanceof SyntaxError) {
-      return NextResponse.json(
-        { error: "Invalid request format." },
-        { status: 400 }
-      );
-    }
+  } catch (err: any) {
+    const message =
+      err && typeof err === "object" && "message" in err
+        ? String(err.message)
+        : String(err);
 
     return NextResponse.json(
-      { error: "Server error. Please try again." },
+      {
+        error: "Server error. Please try again.",
+        errorMessage: message,
+      },
       { status: 500 }
     );
   }
