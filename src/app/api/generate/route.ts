@@ -5,9 +5,11 @@ const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN as string,
 });
 
+type Vibe = "PARTY" | "HOME" | "COUPLE";
+
 type GenerateRequestBody = {
   userImage: string;
-  vibe: "PARTY" | "HOME" | "COUPLE";
+  vibe: Vibe;
 };
 
 export async function POST(req: Request) {
@@ -22,39 +24,26 @@ export async function POST(req: Request) {
       );
     }
 
-    const identity =
-      "The generated person must look exactly like the person in the input photo. Preserve identity, age, gender, face shape, jawline, nose, mouth, teeth, eyes, eyebrows, skin tone and hairstyle. Do not beautify, do not change makeup, do not change hairstyle, do not change teeth, do not make a new character.";
+    const identityPrompt =
+      "Subject must look identical to the person in the input photo. Preserve face shape, skin tone, eye shape and color, nose, mouth, jawline, eyebrows and all small asymmetries. Preserve the exact hairstyle: same length, same color, same parting, same hairline and volume. Do not cut, recolor or restyle the hair. Do not add bangs or fringe. Do not smooth, retouch or beautify the face. Do not change makeup. Do not change age or gender. Do not generate a new person.";
 
-    const filmLook =
-      "single 1990s Christmas instant film photograph, shot on Polaroid 600, white instant film border, soft focus, very slight lens blur, visible but fine film grain, gently muted colors, subtle vignette, not HDR, not ultra sharp, not digital.";
+    const polaroidBase =
+      "1995 Christmas Polaroid photo, instant film, soft focus, subtle motion blur, visible film grain, gentle vignette, small white border, flash photography, slight warm color cast, scanned print, analog, not digital, not HDR, not smartphone camera.";
 
-    let prompt: string;
+    let scenePrompt: string;
 
     if (vibe === "PARTY") {
-      prompt = [
-        filmLook,
-        "indoor office Christmas party in the mid 1990s, festive lights and garlands in the background, but only one person clearly in the frame.",
-        "Upper body portrait of the same person from the input, facing the camera or slightly angled.",
-        "Background can have vague silhouettes, but no clearly visible extra faces, no crowd in focus, no second person next to them.",
-        identity,
-      ].join(" ");
-    } else if (vibe === "COUPLE") {
-      prompt = [
-        filmLook,
-        "cozy romantic 1990s Christmas evening near a window with warm string lights and bokeh.",
-        "Exactly two people sitting close together like a couple, the same main person from the input plus one partner.",
-        "Keep the main person from the input as the primary face in the foreground. Do not add any third person, no crowd, no extra faces in the background.",
-        identity,
-      ].join(" ");
+      scenePrompt =
+        "single person in the foreground, waist-up, centered in frame, crowded office Christmas party in the background, people behind are slightly out of focus, ugly Christmas sweaters, garlands and fairy lights, plastic cups on tables, lively but blurred background, exactly one sharp face in the foreground.";
+    } else if (vibe === "HOME") {
+      scenePrompt =
+        "single person in a cozy 1995 family living room, sitting on a sofa near a decorated real Christmas tree with multicolored lights, CRT television, framed family photos on the wall, patterned carpet, warm tungsten lamps, homely atmosphere, exactly one sharp face in the scene.";
     } else {
-      prompt = [
-        filmLook,
-        "classic 1990s living room Christmas scene with a real Christmas tree, warm tungsten lamps, patterned carpet and family decorations.",
-        "Only one person clearly in the frame, the same person from the input, sitting or standing in front of the tree.",
-        "No second person, no group, no additional faces in background.",
-        identity,
-      ].join(" ");
+      scenePrompt =
+        "two people sitting close together at a small table by a window, romantic 1995 Christmas evening, fairy lights bokeh in the background, mugs on the table, cozy intimate atmosphere, exactly two faces visible, both in focus.";
     }
+
+    const fullPrompt = `${polaroidBase} ${scenePrompt} ${identityPrompt}`;
 
     const prediction = await replicate.predictions.create({
       version:
@@ -62,16 +51,16 @@ export async function POST(req: Request) {
       input: {
         width: 768,
         height: 960,
-        prompt,
+        prompt: fullPrompt,
         main_face_image: userImage,
         negative_prompt:
-          "crowd, multiple people, extra faces, background people, beautified face, modified teeth, different hairstyle, different person, deformed face, distorted anatomy, cartoon, anime, painting, illustration, HDR, oversharpened, plastic skin, text, watermark, logo",
+          "different person, different face, face swap, beauty filter, retouched skin, plastic skin, over-smooth skin, cartoon, anime, painting, illustration, distorted face, deformed face, extra faces, extra eyes, extra nose, multiple sharp faces, different hairstyle, haircut, shaved head, bangs, fringe, ponytail, bun, different hair color, hat covering hair, strong makeup change, text, watermark, logo",
         num_outputs: 1,
-        guidance_scale: 5.0,
-        num_inference_steps: 28,
-        id_weight: 1.7,
-        true_cfg: 1.4,
-      },
+        guidance_scale: 7,
+        num_inference_steps: 30,
+        id_weight: 1.4,
+        true_cfg: 1.2
+      }
     });
 
     let result = await replicate.predictions.get(prediction.id);
