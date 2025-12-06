@@ -10,43 +10,94 @@ const replicate = new Replicate({
 
 type Vibe = "PARTY" | "HOME" | "COUPLE";
 
+// 🎯 VIRAL-GRADE PROMPTS: Meitu/Fotorama seviyesi
 function buildPrompt(vibe: Vibe) {
-  const facePreservation =
-    "IMPORTANT: Use the exact same person from the input image. Preserve facial features, bone structure, eye shape, nose, lips, teeth, eyebrows, skin tone, hair color, hair length, hair parting, and hairstyle exactly as shown. Do not change ethnicity, age, gender, or identity. The person must be instantly recognizable.";
+  // ⚡ FACE PRESERVATION - EN GÜÇLÜ VERSİYON
+  const identityLock =
+    "CRITICAL INSTRUCTION: This is a style transfer task, NOT a face generation task. You must use the EXACT person from the input image as a reference. Lock and preserve: facial identity, bone structure, eye color and shape, eyebrow shape and position, nose bridge and tip, lip shape and size, chin shape, jawline, cheekbones, skin tone, facial proportions, hair color, hair texture, hair length, hairline, hair parting direction. DO NOT generate a new face. DO NOT alter facial features. DO NOT change the person's appearance. The output must be the same recognizable person in a different setting and style. Identity preservation is more important than style accuracy.";
 
-  const filmAesthetic =
-    "Authentic 1990s Christmas Polaroid photograph shot on Kodak Gold 400. Soft focus with slight blur, visible film grain, warm yellow-orange tungsten color cast, subtle vignette, gentle overexposure on highlights, direct flash creating small specular highlights, cozy and nostalgic atmosphere.";
+  // 📸 PREMIUM POLAROID SIMULATION
+  const polaroidTech =
+    "Technical specifications for authentic 1995 Polaroid 600 camera: Kodak Gold 200 or Fujifilm Superia 400 35mm film characteristics. Optical properties: fixed focal length 106mm equivalent, f/8-f/11 aperture creating natural depth of field, built-in electronic flash producing hard directional light from 3 feet distance. Film grain: visible chromatic grain pattern with slight color shift in shadows (magenta-green), midtones warm (yellow-orange bias from tungsten lighting), highlights slightly blown with halation glow. Lens aberration: soft corners, mild barrel distortion, dreamy soft focus on edges while center stays relatively sharp. Exposure: slight overexposure by 1/3 stop, crushed blacks, glowing highlights. Color science: muted saturation, warm color temperature 3200K-3800K, faded appearance as if photo aged 30 years. Physical artifacts: natural vignetting, subtle light leaks on borders, finger smudge on bottom corner, date stamp possibility.";
 
-  const technicalDetails =
-    "Single on-camera flash, shallow depth of field, slightly off-center amateur framing, handheld camera feeling, natural red-eye allowed, realistic 35mm film texture, no digital artifacts.";
+  // 🎨 COMPOSITION & ATMOSPHERE
+  const shootingStyle =
+    "Amateur photographer aesthetic: slightly off-center subject placement following rule of thirds loosely, candid unposed moment, subject caught mid-expression or mid-movement, natural relaxed body language, authentic emotion not forced smile. Camera handling: handheld shake creating 1-2 pixel motion blur, slight dutch angle tilt (2-3 degrees), photographer at eye level or slightly below. Flash photography: direct flash creating catchlights in eyes, subtle red-eye effect acceptable, harsh front lighting with soft fall-off, background underexposed by 1 stop. Environmental storytelling: every background element tells the 1995 Christmas story.";
 
   if (vibe === "PARTY") {
-    return `${facePreservation}
+    return `${identityLock}
 
-Transform this into a 1995 office Christmas party portrait. The person is in the foreground as a single subject, wearing a festive but casual 90s holiday outfit such as a patterned knit sweater or red flannel shirt. Background shows a crowded office party scene: blurred coworkers, cheap metallic tinsel, plastic cups, paper plates with snacks, and colorful Christmas string lights hanging from the ceiling. Expression is relaxed, happy, slightly excited, like a candid snapshot taken mid-conversation. The environment feels noisy, social, and fun.
+SCENE: 1995 Office Christmas Party - Friday evening, 7:30 PM.
 
-${filmAesthetic} ${technicalDetails}
+SUBJECT PLACEMENT: The person from the input image is positioned in the mid-foreground, occupying 60% of frame height. They are standing or sitting casually, body turned 25 degrees from camera, face toward lens with genuine happy expression - the "I'm having fun" look with slight squint from laughing.
 
-Style: disposable camera flash photo from a real 1990s office Christmas party, captured as a candid moment.`;
+WARDROBE: 90s holiday casual - oversized cable knit sweater in festive colors (forest green, burgundy, or cream with Fair Isle pattern), OR button-up flannel shirt, OR company-issued holiday vest over white turtleneck. Clothing should have realistic fabric texture and natural wrinkles.
+
+BACKGROUND DEPTH & DETAIL: 
+- Immediate background (5 feet): Blurred office coworkers in similar 90s attire, plastic red cups in hands, someone mid-laugh with mouth open
+- Mid background (10 feet): Folding tables with holiday food (cheese cubes, crackers, veggie tray), cheap metallic tinsel garland taped to walls in swooping pattern
+- Far background (15+ feet): Fluorescent office ceiling lights mixed with multicolor Christmas string lights, cubicle walls visible, "HAPPY HOLIDAYS" banner, someone wearing a Santa hat
+- Depth cues: Background progressively blurred, atmospheric haze from flash fall-off
+
+LIGHTING: Single point source flash from camera position. Flash characteristics: harsh specular highlights on foreground subject's face and shoulders, dark shadows under chin, background receives 40% less light creating natural separation. Color temperature: warm tungsten ambient (2800K) mixed with cool flash (5500K) creating that signature 90s color clash. Practical lights: Christmas string lights in background creating small bokeh circles (defocused) in yellow, red, green, blue.
+
+MOOD: Chaotic holiday joy. Energy level: 7/10. Sound implied: multiple conversations, background music, laughter. The photo captures that "peak party moment" feeling.
+
+${polaroidTech} ${shootingStyle}
+
+FINAL STYLE DIRECTIVE: This should look like a real photograph pulled from a 1995 office Christmas party disposable camera roll. Not a recreation, not a costume - a genuine moment frozen in time. Think: authentic, raw, imperfect, nostalgic, joyful. The kind of photo you'd find in an old shoebox that makes you smile.`;
   }
 
   if (vibe === "HOME") {
-    return `${facePreservation}
+    return `${identityLock}
 
-Transform this into a cozy 1995 Christmas Eve at home. The person is alone in the frame, sitting comfortably on a vintage patterned couch or on a carpet in front of a decorated Christmas tree. Background shows a warm living room: large Christmas tree with colorful lights and ornaments, wrapped gifts on the floor, maybe a CRT television, wood furniture, framed family photos, and soft lamps. Outfit is comfortable 90s loungewear such as an oversized knit sweater or simple long-sleeve top. Expression is gentle, warm, calm, like a quiet intimate holiday moment at home.
+SCENE: 1995 Christmas Eve at Home - 8:00 PM, family living room.
 
-${filmAesthetic} ${technicalDetails}
+SUBJECT PLACEMENT: The person from the input image is seated on floor or couch in lower-center frame, occupying 50-55% of frame height. Relaxed posture: legs crossed or tucked, leaning back slightly, one arm resting naturally. Face has soft peaceful smile - the "content at home" expression with warm eyes.
 
-Style: treasured family album Polaroid from Christmas 1995, intimate and nostalgic.`;
+WARDROBE: Cozy 90s loungewear - oversized knit cardigan or pullover sweater in solid warm tones (burgundy, forest green, oatmeal), OR vintage Christmas sweatshirt with puff paint design, OR flannel pajama top. Fabric appears soft and lived-in, realistic textile draping.
+
+BACKGROUND DEPTH & DETAIL:
+- Immediate background (3 feet): Large decorated Christmas tree dominating right or left third of frame - 6-7 feet tall, full shape, mix of colorful glass ball ornaments and homemade decorations, dense tinsel strands, multicolor incandescent lights (C7 bulbs), tree topper star
+- Mid background (8 feet): Wrapped presents stacked under tree with visible wrapping paper patterns (snowflakes, candy canes, Santa prints), CRT television set on entertainment center showing soft glow, VCR on shelf below
+- Far background (12+ feet): Wood paneling or floral wallpaper (dusty rose or beige pattern), framed family photos on walls, table lamp with warm yellow shade, doorway to darkened hallway
+- Floor: Patterned carpet in burgundy or beige with 90s geometric design, or hardwood with area rug
+
+LIGHTING: Single flash from camera 6 feet away. Flash creates: bright even illumination on subject, Christmas tree lights visible as bright spots with star-filter effect, soft ambient glow from TV and lamps mixing with flash. Color palette: warm golden glow from tree lights, yellow from tungsten lamps, cooler flash on subject creating skin tone balance. Tree lights creating subtle lens flares and practical bokeh when slightly out of focus.
+
+MOOD: Peaceful intimate warmth. Energy level: 3/10 (calm, quiet, reflective). This is the "quiet moment before bed on Christmas Eve" feeling. Implies: family sleeping, soft music or silence, anticipation of tomorrow morning.
+
+${polaroidTech} ${shootingStyle}
+
+FINAL STYLE DIRECTIVE: This should look like a treasured family photo album memory - the kind grandparents keep in a leather-bound album and show guests. Not staged, not professional - just a beautiful quiet moment someone wanted to remember. Authentic domestic intimacy, captured with love. The photo quality says "amateur" but the emotion says "priceless memory."`;
   }
 
-  return `${facePreservation}
+  // COUPLE
+  return `${identityLock}
 
-Transform this into a romantic 1995 Christmas couples portrait. Two people are in the frame, sitting close together or slightly cheek-to-cheek, with affectionate body language. Use the input person as one member of the couple and keep their identity exactly the same. The other person appears as a distinct partner next to them. Background shows soft bokeh from out-of-focus Christmas tree lights, warm indoor holiday decorations, and a subtle hint of mistletoe or garlands. Both wear festive 90s holiday outfits like knit sweaters or simple dressy tops. Expressions are loving, relaxed, and happy, as if posing for their first Christmas photo together.
+SCENE: 1995 Romantic Christmas Couples Portrait - Holiday party or family gathering, 9:00 PM.
 
-${filmAesthetic} ${technicalDetails}
+SUBJECT PLACEMENT: Two people in frame - the person from the input image positioned in left-center or right-center occupying 45% of frame width, second person (romantic partner) occupying remaining 40%. Small overlap where they're touching. Both facing camera at slight 15-degree angles toward each other. Distance between faces: 8-12 inches apart, creating intimate but not cramped composition.
 
-Style: romantic Christmas Polaroid from 1995, soft, warm, and nostalgic.`;
+INTERACTION & POSING: Natural couple posture - arms around each other's waists or shoulders, bodies angled toward each other while faces toward camera, slight lean-in suggesting affection. The input person maintains EXACT facial features and identity. Partner should be distinctly different person with own features, complementary height/build, wearing coordinating but not matching holiday outfit.
+
+WARDROBE: 90s holiday couple coordination - both in festive sweaters (matching ugly Christmas sweaters acceptable and period-accurate), OR dressy-casual (button-up shirts, nice knits), OR one in sweater one in blouse/shirt. Realistic fabric texture, natural fit, slight wrinkles at elbows and waist from sitting/posing.
+
+FACIAL EXPRESSIONS: Both people showing genuine affection - soft smiles, eyes with warmth (the "looking at camera but thinking about each other" expression), relaxed happy faces. The input person's identity must be perfectly preserved - same face, just happy and in love.
+
+BACKGROUND DEPTH & DETAIL:
+- Immediate background (4 feet): Christmas tree out of focus creating beautiful bokeh - tree lights become large soft circles in green, red, yellow, blue (sizes varying 20-40 pixels diameter), magical dreamy effect
+- Mid background (8 feet): Soft suggestion of indoor holiday party or living room - blurred warm interior, hint of other people or furniture as soft color masses, garland or decorations as soft shapes
+- Far background (12+ feet): Complete blur into warm amber/golden glow, possibly doorway or window as lighter rectangle shape, creating depth and atmosphere
+- Above subjects: Visible mistletoe or holiday decoration in sharp focus hanging at top of frame (optional but thematic)
+
+LIGHTING: Single flash 5-6 feet from subjects at slight angle. Creates: even illumination across both faces with natural shadows, catchlights in all four eyes creating "sparkle", soft shadows where bodies overlap. Background receives less light (underexposed 1.5 stops) making tree bokeh glow appear more prominent. Color: warm tungsten ambient mixing with flash, golden hour indoor feeling, slight color bleed from tree lights onto subjects' shoulders (green/red color cast on edges).
+
+MOOD: Romantic warmth and new love. Energy: 5/10 (present and connected, not hyper). This captures "our first Christmas together" or "this is the year we knew" energy. Implies: stolen moment at family gathering, photo someone insisted they take, memory they'll treasure forever.
+
+${polaroidTech} ${shootingStyle}
+
+FINAL STYLE DIRECTIVE: This should look like THE romantic Christmas photo every couple has from the 90s - the one that ends up framed on mantles and in wallets. Not cheesy, not overly posed - just two people genuinely in love during the holidays, captured by someone who cared enough to take a good photo. Think: relationship milestone, treasured memory, authentic emotion. The kind of photo that makes people say "aww" 30 years later. Critical: The input person's face must be perfectly recognizable while their partner is a distinct separate individual.`;
 }
 
 export async function POST(req: NextRequest) {
@@ -62,18 +113,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing image or vibe mode." }, { status: 400 });
     }
 
+    // 🚀 VIRAL-OPTIMIZED PARAMETERS
     const input = {
       prompt: buildPrompt(vibe),
       image: userImage,
-      prompt_strength: 0.60,
-      num_inference_steps: 28,
-      guidance_scale: 3.0,
-      megapixels: "1",
-      go_fast: true,
+      
+      // 🎯 IDENTITY PRESERVATION MAXIMUM
+      prompt_strength: 0.55, // Lower = stronger face preservation (0.55 is sweet spot)
+      
+      // 🎨 QUALITY & STYLE BALANCE  
+      num_inference_steps: 32, // Higher = better quality & detail
+      guidance_scale: 3.2, // Balanced creative freedom + prompt adherence
+      
+      // 📱 VIRAL OPTIMIZATION
+      megapixels: "1", // Fast generation, perfect for social media
       output_format: "jpg",
-      output_quality: 90,
+      output_quality: 95, // Premium quality for sharing
+      aspect_ratio: "4:5", // Instagram/TikTok optimal ratio
+      
+      // ⚡ PERFORMANCE
+      go_fast: true, // Speed mode enabled
       disable_safety_checker: false,
-      negative_prompt: "cartoon, illustration, anime, 3d render, painting, deformed, distorted, disfigured, bad quality, low quality, jpeg artifacts, extra limbs, extra fingers"
+      
+      // 🚫 NEGATIVE PROMPTING - Critical for photo realism
+      negative_prompt: "cartoon, anime, illustration, 3d render, cgi, digital art, painting, drawing, sketch, artificial, fake, plastic, doll-like, smooth skin, airbrushed, unrealistic, distorted face, deformed features, wrong anatomy, extra limbs, extra fingers, mutated hands, bad proportions, blurry face, duplicate faces, multiple people in single-person scene, modern clothing, modern technology, smartphones, digital cameras, contemporary fashion, 2000s style, 2010s style, 2020s style, HD quality, 4K, crystal clear, professional photography, studio lighting, ring light, perfect lighting"
     };
 
     const prediction = await replicate.predictions.create({
@@ -86,16 +149,18 @@ export async function POST(req: NextRequest) {
     let pollCount = 0;
     const timeoutMs = 55000;
 
+    // Smart exponential backoff polling
     while (["starting", "processing", "queued"].includes(result.status)) {
       if (Date.now() - startedAt > timeoutMs) {
         await replicate.predictions.cancel(prediction.id).catch(() => {});
         return NextResponse.json(
-          { error: "Generation timed out due to high traffic." },
+          { error: "Generation timed out. Please try again!" },
           { status: 504 }
         );
       }
 
-      const waitTime = Math.min(500 * Math.pow(2, pollCount), 2000);
+      // Exponential backoff: 400ms → 800ms → 1600ms → 2000ms (max)
+      const waitTime = Math.min(400 * Math.pow(2, pollCount), 2000);
       await new Promise((resolve) => setTimeout(resolve, waitTime));
       
       pollCount++;
@@ -103,8 +168,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (result.status !== "succeeded" || !result.output) {
+      console.error("Generation failed:", result.error);
       return NextResponse.json(
-        { error: "AI generation failed. Please try a clear photo." },
+        { error: "Generation failed. Try a different photo with clear face!" },
         { status: 500 }
       );
     }
@@ -119,7 +185,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("API Error:", error);
     return NextResponse.json(
-      { error: "Internal server error." },
+      { error: "Server error. Please try again." },
       { status: 500 }
     );
   }
