@@ -86,18 +86,20 @@ export async function POST(req: Request) {
       },
     });
 
-    let result = await replicate.predictions.get(prediction.id);
+    let result: any = await replicate.predictions.get(prediction.id);
+    let status: string = String(result.status);
 
     while (
-      result.status === "starting" ||
-      result.status === "processing" ||
-      result.status === "queued"
+      status === "starting" ||
+      status === "processing" ||
+      status === "queued"
     ) {
       await new Promise((resolve) => setTimeout(resolve, 1200));
-      result = await replicate.predictions.get(result.id);
+      result = await replicate.predictions.get(result.id as string);
+      status = String(result.status);
     }
 
-    if (result.status === "failed") {
+    if (status === "failed") {
       return NextResponse.json(
         {
           error:
