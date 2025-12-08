@@ -18,14 +18,13 @@ try {
 
 type Vibe = "PARTY" | "HOME" | "COUPLE";
 
-const REPLICATE_MODEL_VERSION =
-  "15589a1a9e6b240d246752fc688267b847db4858910cc390794703384b6a5443";
+const REPLICATE_MODEL =
+  "black-forest-labs/flux-kontext-pro:15589a1a9e6b240d246752fc688267b847db4858910cc390794703384b6a5443";
 
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 const MAX_REQUESTS_PER_MINUTE = 5;
 const RATE_LIMIT_WINDOW = 60000;
 const MAX_IMAGE_SIZE = 10_000_000;
-const TIMEOUT_BUFFER = 3000;
 
 function getClientIdentifier(req: NextRequest): string {
   const forwarded = req.headers.get("x-forwarded-for");
@@ -96,32 +95,6 @@ function normalizeVibe(v: any): Vibe | null {
   return null;
 }
 
-function getPromptStrength(vibe: Vibe): number {
-  switch (vibe) {
-    case "COUPLE":
-      return 0.7;
-    case "PARTY":
-      return 0.89;
-    case "HOME":
-      return 0.88;
-    default:
-      return 0.88;
-  }
-}
-
-function getGuidanceScale(vibe: Vibe): number {
-  switch (vibe) {
-    case "COUPLE":
-      return 6.5;
-    default:
-      return 7.5;
-  }
-}
-
-function getNumInferenceSteps(vibe: Vibe): number {
-  return 60;
-}
-
 function buildPrompt(vibe: Vibe): string {
   const absoluteFacePreservation = [
     "Input face is the absolute ground truth",
@@ -133,7 +106,9 @@ function buildPrompt(vibe: Vibe): string {
     "No plastic surgery look, no AI beautification filter, keep it raw and authentic",
     "Facial proportions, expression, and age must remain exactly consistent with the input",
     "Do not change the jawline, nose, lips, or eye shape at all",
-    "Do not alter makeup style, freckles, moles, scars, or facial hair patterns"
+    "Do not alter makeup style, freckles, moles, scars, or facial hair patterns",
+    "Hairline, hair volume, hair length, and hairstyle must remain consistent with the input image",
+    "Hair color should remain the same, only slight lighting changes are allowed"
   ].join(", ");
 
   const cinematicQuality = [
@@ -203,7 +178,7 @@ function buildPrompt(vibe: Vibe): string {
     return [
       "Wide, intimate Christmas Eve scene in a large, ultra-cozy living room",
       "Lighting: Warm, soft, golden hour glow coming from a large fireplace and massive Christmas tree lights filling the room",
-      "Atmosphere: Peaceful, silent night, heavy 'hygge' feeling, viewing the person in their comfortable environment",
+      "Atmosphere: Peaceful, silent night, heavy hygge feeling, viewing the person in their comfortable environment",
       "Background: A wide view of a decorated Christmas tree, stocked fireplace, plush furniture, blankets, and gifts",
       "Clothing: A unisex, comfortable, oversized, chunky knit Christmas sweater in neutral festive tones (cream, deep green, or charcoal)",
       "Subject sits or lounges naturally on a sofa, armchair, or thick rug inside the room, with feet or body clearly anchored in the space",
@@ -223,7 +198,7 @@ function buildPrompt(vibe: Vibe): string {
     "Both faces must remain 100% identical to the original photo, including all proportions, skin details, and expressions",
     "Chemistry: The couple is leaning heads together, physically close, creating a sense of deep intimacy",
     "The couple stands or sits together on a sofa or in front of the fireplace, clearly grounded in the room with natural contact points",
-    "Clothing: MATCHING identical unisex high-end couple Christmas sweaters (e.g., classic fair isle pattern in navy and cream)",
+    "Clothing: MATCHING identical unisex high-end couple Christmas sweaters, classic fair isle pattern in navy and cream",
     "The sweaters look thick, premium, and identical, uniting them as a pair",
     "Lighting: Soft, romantic candlelight and fireplace glow, illuminating them within the wider scene",
     "Background: A dreamy, wide view of a luxury living room decorated for Christmas, with the couple integrated into the setting",
@@ -253,74 +228,6 @@ function buildNegativePrompt(): string {
     "motion blur on face, ghosting",
     "feminine clothing on male subject, masculine clothing on female subject"
   ].join(", ");
-}
-
-async function createPredictionWithRetry(input: Record<string, any>) {
-  const maxAttempts = 4;
-  let attempt = 0;
-  let lastError: any = null;
-
-  while (attempt < maxAttempts) {
-    try {
-      return await replicate.predictions.create({
-        version: REPLICATE_MODEL_VERSION,
-        input
-      });
-    } catch (e: any) {
-      const msg = String(e?.message || "");
-      const status = (e as any)?.status || (e as any)?.statusCode;
-      const is429 =
-        status === 429 ||
-        msg.includes("429") ||
-        msg.toLowerCase().includes("throttled");
-
-      if (!is429) throw e;
-
-      lastError = e;
-      const delay = Math.min(1000 * Math.pow(2, attempt), 5000);
-      await new Promise((r) => setTimeout(r, delay));
-      attempt += 1;
-    }
-  }
-
-  const message =
-    (lastError && lastError.message) ||
-    "Generation rate-limited. Please wait a few seconds and try again.";
-  throw new Error(message);
-}
-
-async function getPredictionWithRetry(id: string) {
-  const maxAttempts = 3;
-  let attempt = 0;
-  let lastError: any = null;
-
-  while (attempt < maxAttempts) {
-    try {
-      return await replicate.predictions.get(id);
-    } catch (e: any) {
-      const msg = String(e?.message || "");
-      const status = (e as any)?.status || (e as any)?.statusCode;
-      const transient =
-        status === 429 ||
-        (typeof status === "number" && status >= 500) ||
-        msg.toLowerCase().includes("timeout") ||
-        msg.toLowerCase().includes("temporarily") ||
-        msg.toLowerCase().includes("unavailable");
-
-      if (!transient || attempt === maxAttempts - 1) {
-        lastError = e;
-        break;
-      }
-
-      lastError = e;
-      const delay = Math.min(500 * Math.pow(2, attempt), 2000);
-      await new Promise((r) => setTimeout(r, delay));
-      attempt += 1;
-    }
-  }
-
-  if (lastError) throw lastError;
-  throw new Error("Unknown prediction fetch error");
 }
 
 export async function POST(req: NextRequest) {
@@ -375,84 +282,35 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const basePrompt = buildPrompt(normalizedVibe);
+    const fullPrompt = `${basePrompt}. Avoid: ${buildNegativePrompt()}`;
+
     const input = {
-      prompt: buildPrompt(normalizedVibe),
+      prompt: fullPrompt,
       input_image: userImage,
       aspect_ratio: "3:4",
-      output_format: "jpg",
-      output_quality: 100,
-      negative_prompt: buildNegativePrompt(),
-      safety_tolerance: 2,
-      prompt_strength: getPromptStrength(normalizedVibe),
-      guidance_scale: getGuidanceScale(normalizedVibe),
-      num_inference_steps: getNumInferenceSteps(normalizedVibe)
+      output_format: "jpeg",
+      safety_tolerance: 2
     };
 
-    const prediction = await createPredictionWithRetry(input);
+    const output = (await replicate.run(REPLICATE_MODEL, {
+      input
+    })) as unknown;
 
-    let result = await getPredictionWithRetry(prediction.id);
-    const startedAt = Date.now();
-    let pollCount = 0;
-    const timeoutMs = maxDuration * 1000 - TIMEOUT_BUFFER;
+    let outputUrl: string | null = null;
 
-    while (
-      result.status === "starting" ||
-      result.status === "processing" ||
-      (result.status as any) === "queued"
-    ) {
-      if (Date.now() - startedAt > timeoutMs) {
-        try {
-          await replicate.predictions.cancel(prediction.id);
-        } catch {}
-        return NextResponse.json(
-          { error: "Generation timed out. Please try again!" },
-          { status: 504 }
-        );
+    if (Array.isArray(output) && output.length > 0) {
+      const first = output[0] as any;
+      if (typeof first === "string") {
+        outputUrl = first;
+      } else if (first && typeof first.url === "function") {
+        outputUrl = first.url();
       }
-      const waitTime = Math.min(400 * Math.pow(2, pollCount), 2000);
-      await new Promise((resolve) => setTimeout(resolve, waitTime));
-      pollCount += 1;
-      result = await getPredictionWithRetry(prediction.id);
+    } else if (typeof output === "string") {
+      outputUrl = output as string;
     }
 
-    if (
-      result.status !== "succeeded" &&
-      result.status !== "failed" &&
-      result.status !== "canceled"
-    ) {
-      return NextResponse.json(
-        { error: "Unknown status from generation service." },
-        { status: 500 }
-      );
-    }
-
-    if (result.status === "failed") {
-      const errorMessage = (result as any).error || "Unknown error occurred";
-      return NextResponse.json(
-        { error: `Generation failed: ${errorMessage}` },
-        { status: 500 }
-      );
-    }
-
-    if (result.status === "canceled") {
-      return NextResponse.json(
-        { error: "Generation was canceled." },
-        { status: 500 }
-      );
-    }
-
-    if (!result.output) {
-      return NextResponse.json(
-        { error: "Generation failed. Try a different photo!" },
-        { status: 500 }
-      );
-    }
-
-    const outputUrl = Array.isArray(result.output)
-      ? (result.output[0] as string)
-      : (result.output as string);
-
-    if (typeof outputUrl !== "string") {
+    if (!outputUrl) {
       return NextResponse.json(
         { error: "Invalid output received from generation service." },
         { status: 500 }
@@ -463,13 +321,12 @@ export async function POST(req: NextRequest) {
       { status: "success", output: outputUrl },
       { status: 200 }
     );
-  } catch (error) {
-    console.error("Generation route error", {
-      error
-    });
-    return NextResponse.json(
-      { error: "Server error. Please try again." },
-      { status: 500 }
-    );
+  } catch (error: any) {
+    console.error("Generation route error", { error });
+    const message =
+      typeof error?.message === "string"
+        ? error.message
+        : "Server error. Please try again.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
