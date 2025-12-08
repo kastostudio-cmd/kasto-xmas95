@@ -198,31 +198,42 @@ function fileToDataUrl(f: File): Promise<string> {
   }
 
   function handleDownload() {
-    if (!outputUrl) return;
+  if (!outputUrl) return;
+
+  const canvas = document.querySelector<HTMLCanvasElement>("#xmas95-canvas");
+
+  if (canvas) {
+    const dataUrl = canvas.toDataURL("image/png");
 
     const isIOS =
       typeof navigator !== "undefined" &&
       /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-    const canvas =
-      !isIOS &&
-      document.querySelector<HTMLCanvasElement>("#xmas95-canvas");
-
-    if (canvas) {
-      const dataUrl = canvas.toDataURL("image/png");
+    if (isIOS) {
+      const win = window.open();
+      if (win) {
+        win.document.write(
+          `<img src="${dataUrl}" style="width:100%;height:auto;display:block;" />`
+        );
+        win.document.close();
+      }
+    } else {
       const link = document.createElement("a");
       link.href = dataUrl;
       link.download = "xmas95-photo.png";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      setShowShareHint(true);
-      return;
     }
 
-    window.open(outputUrl, "_blank");
     setShowShareHint(true);
+    return;
   }
+
+  window.open(outputUrl, "_blank");
+  setShowShareHint(true);
+}
+
 
   async function handleCopyCaption() {
     if (!outputUrl) return;
