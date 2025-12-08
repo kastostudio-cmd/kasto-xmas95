@@ -127,6 +127,44 @@ export function RetroComposer({ src, mode }: RetroComposerProps) {
       ctx.shadowBlur = 3;
       ctx.fillText("kastostudio xmas '95", 28, height - 26);
       ctx.shadowBlur = 0;
+
+      // --- Mini Polaroid frame overlay (viral share look) ---
+      const framePadding = 18;
+      const bottomExtra = 46;
+
+      // dış çerçeve (ince, kirli beyaz)
+      ctx.lineWidth = 14;
+      ctx.strokeStyle = "rgba(250,245,240,0.95)";
+      ctx.strokeRect(
+        framePadding,
+        framePadding,
+        width - framePadding * 2,
+        height - framePadding * 2
+      );
+
+      // alt beyaz şerit (Polaroid hissi)
+      ctx.fillStyle = "rgba(250,245,240,0.96)";
+      ctx.fillRect(
+        framePadding + 4,
+        height - bottomExtra - framePadding,
+        width - (framePadding + 4) * 2,
+        bottomExtra
+      );
+
+      // mode label
+      let modeLabel = "PARTY '95";
+      if (mode === "home") modeLabel = "HOME '95";
+      if (mode === "couple") modeLabel = "COUPLE '95";
+
+      ctx.font = "14px 'Courier New', monospace";
+      ctx.fillStyle = "rgba(40,35,30,0.9)";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(
+        modeLabel,
+        width / 2,
+        height - bottomExtra - framePadding / 2
+      );
     };
 
     img.src = src;
