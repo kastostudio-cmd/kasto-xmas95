@@ -42,6 +42,8 @@ export default function Home() {
     const localUrl = URL.createObjectURL(f);
     setPreviewUrl(localUrl);
     setOutputUrl(null);
+    setUnlocked(false);
+    setShowShareHint(false);
     setStatusMessage("Status: Photo loaded. Ready to generate.");
   }
 
@@ -56,11 +58,14 @@ export default function Home() {
     }
   }
 
-  async function fileToDataUrl(f: File): Promise<string> {
+  function fileToDataUrl(f: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
+      reader.onload = () => {
+        if (typeof reader.result === "string") resolve(reader.result);
+        else reject(new Error("Invalid file reader result"));
+      };
+      reader.onerror = () => reject(reader.error || new Error("File read error"));
       reader.readAsDataURL(f);
     });
   }
@@ -104,6 +109,7 @@ export default function Home() {
       }
 
       setOutputUrl(data.output as string);
+      setUnlocked(false);
       setShowShareHint(false);
       setStatusMessage("Status: Xmas95 photo ready. Unlock to download.");
     } catch (err) {
@@ -256,61 +262,29 @@ export default function Home() {
 
             <div className="preview-box">
               {displayImage ? (
-                outputUrl ? (
+                <div
+                  style={{
+                    width: "100%",
+                    maxWidth: 540,
+                    margin: "0 auto"
+                  }}
+                >
                   <div
                     style={{
+                      position: "relative",
                       width: "100%",
-                      maxWidth: 540,
-                      margin: "0 auto"
+                      aspectRatio: "4 / 5",
+                      overflow: "hidden",
+                      borderRadius: 4,
+                      backgroundColor: "#000",
+                      ...(outputUrl && !unlocked
+                        ? { filter: "blur(3px)" }
+                        : {})
                     }}
                   >
-                    <div
-                      style={{
-                        position: "relative",
-                        width: "100%",
-                        aspectRatio: "4 / 5",
-                        overflow: "hidden",
-                        borderRadius: 4,
-                        backgroundColor: "#000",
-                        ...(outputUrl && !unlocked
-                          ? { filter: "blur(3px)" }
-                          : {})
-                      }}
-                    >
-                      <RetroComposer src={outputUrl} mode={selectedMode} />
-                    </div>
+                    <RetroComposer src={displayImage} mode={selectedMode} />
                   </div>
-                ) : (
-                  <div
-                    style={{
-                      width: "100%",
-                      maxWidth: 540,
-                      margin: "0 auto"
-                    }}
-                  >
-                    <div
-                      style={{
-                        position: "relative",
-                        width: "100%",
-                        aspectRatio: "4 / 5",
-                        overflow: "hidden",
-                        borderRadius: 4,
-                        backgroundColor: "#000"
-                      }}
-                    >
-                      <img
-                        src={previewUrl as string}
-                        alt="Preview"
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                          display: "block"
-                        }}
-                      />
-                    </div>
-                  </div>
-                )
+                </div>
               ) : (
                 <div
                   className="preview-placeholder"
