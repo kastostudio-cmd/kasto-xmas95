@@ -68,10 +68,47 @@ export default function Home() {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => {
-        if (typeof reader.result === "string") resolve(reader.result);
-        else reject(new Error("Invalid file reader result"));
+        if (typeof reader.result !== "string") {
+          reject(new Error("Invalid file reader result"));
+          return;
+        }
+        const img = new Image();
+        img.onload = () => {
+          const maxSize = 1600;
+          let width = img.width;
+          let height = img.height;
+          if (width <= maxSize && height <= maxSize) {
+            resolve(reader.result);
+            return;
+          }
+          if (width > height) {
+            if (width > maxSize) {
+              height = Math.round((height * maxSize) / width);
+              width = maxSize;
+            }
+          } else {
+            if (height > maxSize) {
+              width = Math.round((width * maxSize) / height);
+              height = maxSize;
+            }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            reject(new Error("Canvas not supported"));
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+          resolve(dataUrl);
+        };
+        img.onerror = () => reject(new Error("Image load error"));
+        img.src = reader.result;
       };
-      reader.onerror = () => reject(reader.error || new Error("File read error"));
+      reader.onerror = () =>
+        reject(reader.error || new Error("File read error"));
       reader.readAsDataURL(f);
     });
   }
@@ -120,6 +157,12 @@ export default function Home() {
       setSliderValue(50);
       setShowSlider(true);
       setStatusMessage("Status: Xmas95 photo ready. Unlock to download.");
+      const previewContainer = document.querySelector(
+        ".preview-wrapper"
+      ) as HTMLElement | null;
+      if (previewContainer) {
+        previewContainer.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
     } catch (err) {
       console.error(err);
       setStatusMessage("Status: Generation failed. Check console.", {
@@ -134,6 +177,14 @@ export default function Home() {
     if (codeInput.trim().toUpperCase() === UNLOCK_CODE) {
       setUnlocked(true);
       setStatusMessage("Status: Unlocked. You can download your photo now.");
+      setTimeout(() => {
+        const btn = document.getElementById(
+          "xmas95-download-btn"
+        ) as HTMLButtonElement | null;
+        if (btn) {
+          btn.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 50);
     } else {
       setUnlocked(false);
       setStatusMessage("Status: Invalid code. Please check your purchase.", {
@@ -333,7 +384,10 @@ export default function Home() {
                           overflow: "hidden"
                         }}
                       >
-                        <RetroComposer src={outputUrl as string} mode={selectedMode} />
+                        <RetroComposer
+                          src={outputUrl as string}
+                          mode={selectedMode}
+                        />
                       </div>
                       <div
                         style={{
@@ -529,17 +583,26 @@ export default function Home() {
 
             {outputUrl && (
               <>
-                <button
-                  type="button"
-                  className="win-btn"
-                  onClick={handleDownload}
-                  disabled={!unlocked}
-                  style={{ marginTop: 6 }}
+                <div
+                  style={{
+                    marginTop: 6,
+                    position: "relative",
+                    zIndex: 5
+                  }}
                 >
-                  {unlocked
-                    ? "⬇ DOWNLOAD XMAS95 PHOTO"
-                    : "Enter unlock code to download"}
-                </button>
+                  <button
+                    id="xmas95-download-btn"
+                    type="button"
+                    className="win-btn"
+                    onClick={handleDownload}
+                    disabled={!unlocked}
+                    style={{ width: "100%" }}
+                  >
+                    {unlocked
+                      ? "⬇ DOWNLOAD XMAS95 PHOTO"
+                      : "Enter unlock code to download"}
+                  </button>
+                </div>
 
                 {unlocked && (
                   <div
