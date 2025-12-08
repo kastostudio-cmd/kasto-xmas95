@@ -19,7 +19,7 @@ try {
 type Vibe = "PARTY" | "HOME" | "COUPLE";
 
 const REPLICATE_MODEL_VERSION =
-"15589a1a9e6b240d246752fc688267b847db4858910cc390794703384b6a5443";
+  "15589a1a9e6b240d246752fc688267b847db4858910cc390794703384b6a5443";
 
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 const MAX_REQUESTS_PER_MINUTE = 5;
@@ -368,7 +368,9 @@ export async function POST(req: NextRequest) {
 
     if (!validateBase64Image(userImage)) {
       return NextResponse.json(
-        { error: "Invalid image format or image too large (max 10MB)." },
+        {
+          error: "Invalid image format or image too large (max 10MB)."
+        },
         { status: 400 }
       );
     }
@@ -394,11 +396,10 @@ export async function POST(req: NextRequest) {
     const timeoutMs = maxDuration * 1000 - TIMEOUT_BUFFER;
 
     while (
-  result.status === "starting" ||
-  result.status === "processing" ||
-  (result.status as any) === "queued"
-) {
-
+      result.status === "starting" ||
+      result.status === "processing" ||
+      (result.status as any) === "queued"
+    ) {
       if (Date.now() - startedAt > timeoutMs) {
         try {
           await replicate.predictions.cancel(prediction.id);
