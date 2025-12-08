@@ -193,8 +193,7 @@ export function RetroComposer({ src, mode }: RetroComposerProps) {
       ref={canvasRef}
       width={768}
       height={960}
-      className="preview-image"
-      style={{ width: "100%", height: "auto", display: "block" }}
+      style={{ width: "100%", height: "100%", display: "block" }}
     />
   );
 }
