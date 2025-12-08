@@ -289,7 +289,7 @@ export async function POST(req: NextRequest) {
       prompt: fullPrompt,
       input_image: userImage,
       aspect_ratio: "3:4",
-      output_format: "jpeg",
+      output_format: "jpg",
       safety_tolerance: 2
     };
 
@@ -303,8 +303,6 @@ export async function POST(req: NextRequest) {
       const first = output[0] as any;
       if (typeof first === "string") {
         outputUrl = first;
-      } else if (first && typeof first.url === "function") {
-        outputUrl = first.url();
       }
     } else if (typeof output === "string") {
       outputUrl = output as string;
