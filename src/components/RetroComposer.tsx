@@ -51,7 +51,7 @@ export function RetroComposer({ src, mode }: RetroComposerProps) {
       let contrast = 0.95;
       let saturate = 1.06;
       let warm = 0.18;
-      let grain = 9;
+      let grain = 6;
       let vignette = 0.32;
 
       if (mode === "party") {
@@ -59,24 +59,25 @@ export function RetroComposer({ src, mode }: RetroComposerProps) {
         contrast = 0.97;
         saturate = 1.12;
         warm = 0.22;
-        grain = 10;
+        grain = 7;
         vignette = 0.3;
       } else if (mode === "home") {
         brightness = 1.02;
         contrast = 0.98;
         saturate = 1.06;
         warm = 0.21;
-        grain = 8;
+        grain = 5.5;
         vignette = 0.28;
       } else if (mode === "couple") {
         brightness = 0.98;
         contrast = 1.04;
         saturate = 1.04;
         warm = 0.24;
-        grain = 7.5;
+        grain = 5;
         vignette = 0.4;
       }
 
+      ctx.imageSmoothingEnabled = true;
       ctx.filter = `brightness(${brightness}) contrast(${contrast}) saturate(${saturate})`;
       ctx.drawImage(img, dx, dy, drawWidth, drawHeight);
       ctx.filter = "none";
@@ -84,8 +85,28 @@ export function RetroComposer({ src, mode }: RetroComposerProps) {
       const imageData = ctx.getImageData(0, 0, width, height);
       const data = imageData.data;
 
+      const cx = width / 2;
+      const cy = height / 2;
+      const maxRadius = Math.sqrt(cx * cx + cy * cy);
+
       for (let i = 0; i < data.length; i += 4) {
-        const g = (Math.random() - 0.5) * grain;
+        const pixelIndex = i / 4;
+        const x = pixelIndex % width;
+        const y = Math.floor(pixelIndex / width);
+
+        const dxCenter = x - cx;
+        const dyCenter = y - cy;
+        const dist = Math.sqrt(dxCenter * dxCenter + dyCenter * dyCenter);
+        let factor = dist / maxRadius;
+        if (factor < 0) factor = 0;
+        if (factor > 1) factor = 1;
+
+        const centerPreserve = 0.25;
+        const edgeBoost = 1;
+        const grainFactor =
+          centerPreserve + (edgeBoost - centerPreserve) * factor;
+
+        const g = (Math.random() - 0.5) * grain * grainFactor;
         data[i] = Math.min(255, Math.max(0, data[i] + g));
         data[i + 1] = Math.min(255, Math.max(0, data[i + 1] + g));
         data[i + 2] = Math.min(255, Math.max(0, data[i + 2] + g));
