@@ -19,7 +19,7 @@ try {
 type Vibe = "PARTY" | "HOME" | "COUPLE";
 
 const REPLICATE_MODEL_VERSION =
-  "15589a1a9e6b240d246752fc688267b847db48589110cc390794703384b6a5443";
+"15589a1a9e6b240d246752fc688267b847db4858910cc390794703384b6a5443";
 
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 const MAX_REQUESTS_PER_MINUTE = 5;
