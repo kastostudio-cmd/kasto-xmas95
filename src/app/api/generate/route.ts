@@ -24,7 +24,7 @@ const REPLICATE_MODEL =
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 const MAX_REQUESTS_PER_MINUTE = 5;
 const RATE_LIMIT_WINDOW = 60000;
-const MAX_IMAGE_SIZE = 10_000_000;
+const MAX_IMAGE_SIZE = 4_000_000;
 
 function getClientIdentifier(req: NextRequest): string {
   const forwarded = req.headers.get("x-forwarded-for");
@@ -64,21 +64,7 @@ function cleanupRateLimitMap() {
 function validateBase64Image(dataUrl: string): boolean {
   if (!dataUrl || typeof dataUrl !== "string") return false;
 
-  const isUrl = /^https?:\/\//.test(dataUrl);
-  if (isUrl) {
-    try {
-      const url = new URL(dataUrl);
-      if (url.protocol !== "https:") return false;
-      if (!/\.(png|jpg|jpeg|webp|heic)$/i.test(url.pathname)) return false;
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  const match = /^data:image\/(png|jpeg|jpg|webp|heic);base64,(.+)$/.exec(
-    dataUrl
-  );
+  const match = /^data:image\/(png|jpeg|jpg|webp);base64,(.+)$/.exec(dataUrl);
   if (!match) return false;
 
   const base64Data = match[2];
@@ -318,7 +304,7 @@ export async function POST(req: NextRequest) {
     if (!validateBase64Image(userImage)) {
       return NextResponse.json(
         {
-          error: "Invalid image format or image too large (max 10MB)."
+          error: "Invalid image format or image too large (max ~4MB JPG/PNG)."
         },
         { status: 400 }
       );
