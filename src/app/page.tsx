@@ -85,7 +85,7 @@ export default function Home() {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userImage, vibe: vibeKey }),
+        body: JSON.stringify({ userImage, vibe: vibeKey })
       });
 
       if (!res.ok) {
@@ -98,7 +98,7 @@ export default function Home() {
       const data = await res.json();
       if (!data || !data.output) {
         setStatusMessage("Status: No image returned from API.", {
-          error: true,
+          error: true
         });
         return;
       }
@@ -109,7 +109,7 @@ export default function Home() {
     } catch (err) {
       console.error(err);
       setStatusMessage("Status: Generation failed. Check console.", {
-        error: true,
+        error: true
       });
     } finally {
       setIsLoading(false);
@@ -123,7 +123,7 @@ export default function Home() {
     } else {
       setUnlocked(false);
       setStatusMessage("Status: Invalid code. Please check your purchase.", {
-        error: true,
+        error: true
       });
     }
   }
@@ -139,7 +139,6 @@ export default function Home() {
       !isIOS &&
       document.querySelector<HTMLCanvasElement>("#xmas95-canvas");
 
-    // Desktop: direkt PNG indir
     if (canvas) {
       const dataUrl = canvas.toDataURL("image/png");
       const link = document.createElement("a");
@@ -152,7 +151,6 @@ export default function Home() {
       return;
     }
 
-    // iOS ve fallback: resmi yeni sekmede aç → uzun basıp “Save Photo”
     window.open(outputUrl, "_blank");
     setShowShareHint(true);
   }
@@ -166,7 +164,7 @@ export default function Home() {
   const statusClasses = [
     "status-text",
     isError ? "status-error" : "",
-    isLoading ? "status-loading" : "",
+    isLoading ? "status-loading" : ""
   ]
     .filter(Boolean)
     .join(" ");
@@ -255,35 +253,85 @@ export default function Home() {
               <span className="preview-mode-tag">{previewLabel}</span>
               <span style={{ fontSize: "10px" }}>Output (4:5)</span>
             </div>
+
             <div className="preview-box">
               {displayImage ? (
                 outputUrl ? (
                   <div
-                    className="relative w-full h-full"
-                    style={
-                      outputUrl && !unlocked
-                        ? { filter: "blur(3px)" }
-                        : undefined
-                    }
+                    style={{
+                      width: "100%",
+                      maxWidth: 540,
+                      margin: "0 auto"
+                    }}
                   >
-                    <RetroComposer src={outputUrl} mode={selectedMode} />
+                    <div
+                      style={{
+                        position: "relative",
+                        width: "100%",
+                        aspectRatio: "4 / 5",
+                        overflow: "hidden",
+                        borderRadius: 4,
+                        backgroundColor: "#000",
+                        ...(outputUrl && !unlocked
+                          ? { filter: "blur(3px)" }
+                          : {})
+                      }}
+                    >
+                      <RetroComposer src={outputUrl} mode={selectedMode} />
+                    </div>
                   </div>
                 ) : (
-                  <img
-                    src={previewUrl as string}
-                    className="preview-image"
-                    alt="Preview"
-                  />
+                  <div
+                    style={{
+                      width: "100%",
+                      maxWidth: 540,
+                      margin: "0 auto"
+                    }}
+                  >
+                    <div
+                      style={{
+                        position: "relative",
+                        width: "100%",
+                        aspectRatio: "4 / 5",
+                        overflow: "hidden",
+                        borderRadius: 4,
+                        backgroundColor: "#000"
+                      }}
+                    >
+                      <img
+                        src={previewUrl as string}
+                        alt="Preview"
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          display: "block"
+                        }}
+                      />
+                    </div>
+                  </div>
                 )
               ) : (
-                <div className="preview-placeholder">
+                <div
+                  className="preview-placeholder"
+                  style={{
+                    width: "100%",
+                    maxWidth: 540,
+                    margin: "0 auto",
+                    aspectRatio: "4 / 5",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    textAlign: "center"
+                  }}
+                >
                   No output yet. Upload a photo and click "Generate Xmas95
                   Photo".
                   <div
                     style={{
                       fontSize: 11,
                       marginTop: 4,
-                      opacity: 0.8,
+                      opacity: 0.8
                     }}
                   >
                     Tip: Start with Party &apos;95 for the most dramatic glow-up.
@@ -297,7 +345,7 @@ export default function Home() {
                     style={{
                       fontSize: 12,
                       marginBottom: 8,
-                      fontWeight: 600,
+                      fontWeight: 600
                     }}
                   >
                     Unlock your full-resolution Xmas95 photo
@@ -310,93 +358,3 @@ export default function Home() {
                       rel="noreferrer"
                       className="buy-btn"
                     >
-                      <span>Türkiye</span>
-                      <span style={{ fontSize: 10 }}>Pay with iyzico</span>
-                    </a>
-                    <a
-                      href={GLOBAL_URL}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="buy-btn"
-                    >
-                      <span>Global</span>
-                      <span style={{ fontSize: 10 }}>Pay with Gumroad</span>
-                    </a>
-                  </div>
-
-                  <div style={{ fontSize: 10, marginBottom: 4 }}>
-                    After purchase you will receive the unlock code.
-                  </div>
-
-                  <div className="code-input-area">
-                    <input
-                      className="code-input"
-                      placeholder="CODE"
-                      value={codeInput}
-                      onChange={(e) => setCodeInput(e.target.value)}
-                    />
-                    <button
-                      type="button"
-                      className="unlock-btn"
-                      onClick={handleUnlock}
-                    >
-                      UNLOCK
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {outputUrl && (
-              <>
-                <button
-                  type="button"
-                  className="win-btn"
-                  onClick={handleDownload}
-                  disabled={!unlocked}
-                  style={{ marginTop: 6 }}
-                >
-                  {unlocked
-                    ? "⬇ DOWNLOAD XMAS95 PHOTO"
-                    : "Enter unlock code to download"}
-                </button>
-
-                {unlocked && (
-                  <div
-                    style={{
-                      fontSize: 10,
-                      marginTop: 4,
-                      opacity: 0.85,
-                    }}
-                  >
-                    On iPhone: if the image opens in a new tab, tap and hold the
-                    photo and choose <b>“Save Photo”</b>.
-                  </div>
-                )}
-              </>
-            )}
-
-            {outputUrl && showShareHint && (
-              <div
-                style={{
-                  fontSize: 10,
-                  marginTop: 4,
-                  opacity: 0.85,
-                }}
-              >
-                Tag <span style={{ fontWeight: 700 }}>@kastostudio</span> with{" "}
-                <span style={{ fontWeight: 700 }}>#xmas95</span> on Instagram or
-                TikTok 🎄
-              </div>
-            )}
-          </div>
-
-          <div className="status-bar">
-            <span className={statusClasses}>{status}</span>
-            <span className="status-brand">KASTO Studio · XMAS 95</span>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
