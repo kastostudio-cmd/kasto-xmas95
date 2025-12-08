@@ -42,9 +42,6 @@ export default function Home() {
     const localUrl = URL.createObjectURL(f);
     setPreviewUrl(localUrl);
     setOutputUrl(null);
-    setUnlocked(false);
-    setShowShareHint(false);
-    setCodeInput("");
     setStatusMessage("Status: Photo loaded. Ready to generate.");
   }
 
@@ -78,9 +75,7 @@ export default function Home() {
 
     try {
       setIsLoading(true);
-      setStatusMessage("Status: Generating your Xmas95 scene…", {
-        loading: true,
-      });
+      setStatusMessage("Status: Generating Xmas95 photo…", { loading: true });
 
       const userImage = await fileToDataUrl(file);
       let vibeKey: "PARTY" | "HOME" | "COUPLE" = "HOME";
@@ -102,7 +97,7 @@ export default function Home() {
 
       const data = await res.json();
       if (!data || !data.output) {
-        setStatusMessage("Status: No image returned from AI.", {
+        setStatusMessage("Status: No image returned from API.", {
           error: true,
         });
         return;
@@ -110,13 +105,10 @@ export default function Home() {
 
       setOutputUrl(data.output as string);
       setShowShareHint(false);
-      setUnlocked(false);
-      setStatusMessage(
-        "Status: Xmas95 photo ready. Enter your code to unlock & download."
-      );
+      setStatusMessage("Status: Xmas95 photo ready. Unlock to download.");
     } catch (err) {
       console.error(err);
-      setStatusMessage("Status: Generation failed. Please try again.", {
+      setStatusMessage("Status: Generation failed. Check console.", {
         error: true,
       });
     } finally {
@@ -127,9 +119,7 @@ export default function Home() {
   function handleUnlock() {
     if (codeInput.trim().toUpperCase() === UNLOCK_CODE) {
       setUnlocked(true);
-      setStatusMessage(
-        "Status: Unlocked. Download and post your Xmas95 photo 🎄"
-      );
+      setStatusMessage("Status: Unlocked. You can download your photo now.");
     } else {
       setUnlocked(false);
       setStatusMessage("Status: Invalid code. Please check your purchase.", {
@@ -140,7 +130,16 @@ export default function Home() {
 
   function handleDownload() {
     if (!outputUrl) return;
-    const canvas = document.querySelector<HTMLCanvasElement>("#xmas95-canvas");
+
+    const isIOS =
+      typeof navigator !== "undefined" &&
+      /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    const canvas =
+      !isIOS &&
+      document.querySelector<HTMLCanvasElement>("#xmas95-canvas");
+
+    // Desktop: direkt PNG indir
     if (canvas) {
       const dataUrl = canvas.toDataURL("image/png");
       const link = document.createElement("a");
@@ -152,12 +151,9 @@ export default function Home() {
       setShowShareHint(true);
       return;
     }
-    const link = document.createElement("a");
-    link.href = outputUrl;
-    link.download = "xmas95-photo.webp";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+
+    // iOS ve fallback: resmi yeni sekmede aç → uzun basıp “Save Photo”
+    window.open(outputUrl, "_blank");
     setShowShareHint(true);
   }
 
@@ -191,14 +187,9 @@ export default function Home() {
         <div className="hero-section">
           <div className="pixel-logo">🎄 XMAS 95</div>
           <div className="subtitle">
-            Turn one photo into a 1995 Christmas party scene in seconds.
+            Transform one photo into a 1995 Christmas reality.
           </div>
-          <div className="kasto-tag">
-            crafted by KASTO Studio · Win95 shell · made for TikTok & IG Reels
-          </div>
-          <div className="kasto-tag" style={{ fontSize: 10, marginTop: 4 }}>
-            Best results: clear face, no sunglasses, 1–2 people in frame.
-          </div>
+          <div className="kasto-tag">crafted by KASTO Studio · Win95 shell</div>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -206,13 +197,13 @@ export default function Home() {
             <legend>Step 1: Upload Photo</legend>
             <input type="file" accept="image/*" onChange={handleFileChange} />
             <div className="hint">
-              Party &amp; Home: single person selfie or portrait. Couple: two
-              people in the same photo.
+              Party &amp; Home: single person photo. Couple: two people in the
+              same frame.
             </div>
           </fieldset>
 
           <fieldset>
-            <legend>Step 2: Choose Your Xmas Reality</legend>
+            <legend>Step 2: Select Scene</legend>
             <div className="vibe-list">
               <div
                 className={`vibe-item ${
@@ -222,8 +213,8 @@ export default function Home() {
               >
                 <div className="vibe-title">🎉 Party &apos;95</div>
                 <div className="vibe-desc">
-                  Flashy office party energy, Christmas drinks, background
-                  crowd. Single person.
+                  Christmas party vibes, flash photography, festive atmosphere.
+                  Single person.
                 </div>
               </div>
               <div
@@ -234,7 +225,7 @@ export default function Home() {
               >
                 <div className="vibe-title">🏠 Home &apos;95</div>
                 <div className="vibe-desc">
-                  Ultra-cozy living room, tree, fireplace glow. Single person.
+                  Cozy living room, Christmas tree, warm lights. Single person.
                 </div>
               </div>
               <div
@@ -256,7 +247,7 @@ export default function Home() {
             className="win-btn"
             disabled={isLoading || !file}
           >
-            {isLoading ? "Generating…" : "⭐ MAKE MY XMAS95 PHOTO"}
+            {isLoading ? "Generating…" : "⭐ GENERATE XMAS95 PHOTO"}
           </button>
 
           <div className="preview-wrapper">
@@ -276,7 +267,6 @@ export default function Home() {
                     }
                   >
                     <RetroComposer src={outputUrl} mode={selectedMode} />
-                    <RetroOverlay />
                   </div>
                 ) : (
                   <img
@@ -287,8 +277,8 @@ export default function Home() {
                 )
               ) : (
                 <div className="preview-placeholder">
-                  No output yet. Upload a photo and click &quot;Make my Xmas95
-                  photo&quot;.
+                  No output yet. Upload a photo and click "Generate Xmas95
+                  Photo".
                   <div
                     style={{
                       fontSize: 11,
@@ -296,8 +286,7 @@ export default function Home() {
                       opacity: 0.8,
                     }}
                   >
-                    Tip: Party &apos;95 gives the most dramatic before/after for
-                    posts.
+                    Tip: Start with Party &apos;95 for the most dramatic glow-up.
                   </div>
                 </div>
               )}
@@ -307,21 +296,11 @@ export default function Home() {
                   <div
                     style={{
                       fontSize: 12,
-                      marginBottom: 4,
+                      marginBottom: 8,
                       fontWeight: 600,
                     }}
                   >
-                    Step 3: Unlock &amp; download your Xmas95 photo
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 10,
-                      marginBottom: 8,
-                      opacity: 0.8,
-                    }}
-                  >
-                    Preview is AI-generated already. Enter code to get the
-                    full-resolution file.
+                    Unlock your full-resolution Xmas95 photo
                   </div>
 
                   <div className="price-row">
@@ -369,17 +348,32 @@ export default function Home() {
             </div>
 
             {outputUrl && (
-              <button
-                type="button"
-                className="win-btn"
-                onClick={handleDownload}
-                disabled={!unlocked}
-                style={{ marginTop: 6 }}
-              >
-                {unlocked
-                  ? "⬇ DOWNLOAD XMAS95 PHOTO"
-                  : "Enter unlock code to download"}
-              </button>
+              <>
+                <button
+                  type="button"
+                  className="win-btn"
+                  onClick={handleDownload}
+                  disabled={!unlocked}
+                  style={{ marginTop: 6 }}
+                >
+                  {unlocked
+                    ? "⬇ DOWNLOAD XMAS95 PHOTO"
+                    : "Enter unlock code to download"}
+                </button>
+
+                {unlocked && (
+                  <div
+                    style={{
+                      fontSize: 10,
+                      marginTop: 4,
+                      opacity: 0.85,
+                    }}
+                  >
+                    On iPhone: if the image opens in a new tab, tap and hold the
+                    photo and choose <b>“Save Photo”</b>.
+                  </div>
+                )}
+              </>
             )}
 
             {outputUrl && showShareHint && (
@@ -387,26 +381,12 @@ export default function Home() {
                 style={{
                   fontSize: 10,
                   marginTop: 4,
-                  opacity: 0.9,
+                  opacity: 0.85,
                 }}
               >
-                Post it &amp; tag{" "}
-                <span style={{ fontWeight: 700 }}>@kastostudio</span> with{" "}
+                Tag <span style={{ fontWeight: 700 }}>@kastostudio</span> with{" "}
                 <span style={{ fontWeight: 700 }}>#xmas95</span> on Instagram or
-                TikTok 🎄 — we&apos;re featuring the best transformations.
-              </div>
-            )}
-
-            {outputUrl && unlocked && (
-              <div
-                style={{
-                  fontSize: 9,
-                  marginTop: 4,
-                  opacity: 0.7,
-                }}
-              >
-                Mobile tip: if the image opens in a new tab, tap and hold the
-                photo to save it to your camera roll.
+                TikTok 🎄
               </div>
             )}
           </div>
@@ -417,43 +397,6 @@ export default function Home() {
           </div>
         </form>
       </div>
-    </div>
-  );
-}
-
-function RetroOverlay() {
-  return (
-    <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden rounded-sm select-none">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_55%,rgba(0,0,0,0.4)_100%)]"></div>
-      <div
-        className="absolute inset-0 opacity-[0.12] mix-blend-overlay"
-        style={{
-          filter: "contrast(120%)",
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E")`,
-        }}
-      ></div>
-      <div
-        className="absolute inset-0 opacity-20 mix-blend-screen"
-        style={{
-          backgroundImage:
-            "linear-gradient(90deg, transparent 0%, transparent 10%, rgba(255,255,255,0.3) 10.5%, transparent 11%, transparent 45%, rgba(255,255,255,0.2) 45.2%, transparent 46%, transparent 80%, rgba(255,255,255,0.1) 80.3%, transparent 81%)",
-          backgroundSize: "100% 100%",
-        }}
-      ></div>
-      <div
-        className="absolute bottom-3 right-3 font-mono text-[#ff9900] text-sm sm:text-lg tracking-widest font-bold opacity-80"
-        style={{ textShadow: "2px 2px 2px rgba(0,0,0,0.8)" }}
-      >
-        &apos;95 12 25
-      </div>
-      <div
-        className="absolute inset-0 opacity-10"
-        style={{
-          background:
-            "linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06))",
-          backgroundSize: "100% 3px, 3px 100%",
-        }}
-      ></div>
     </div>
   );
 }
