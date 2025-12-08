@@ -358,3 +358,93 @@ export default function Home() {
                       rel="noreferrer"
                       className="buy-btn"
                     >
+                      <span>Türkiye</span>
+                      <span style={{ fontSize: 10 }}>Pay with iyzico</span>
+                    </a>
+                    <a
+                      href={GLOBAL_URL}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="buy-btn"
+                    >
+                      <span>Global</span>
+                      <span style={{ fontSize: 10 }}>Pay with Gumroad</span>
+                    </a>
+                  </div>
+
+                  <div style={{ fontSize: 10, marginBottom: 4 }}>
+                    After purchase you will receive the unlock code.
+                  </div>
+
+                  <div className="code-input-area">
+                    <input
+                      className="code-input"
+                      placeholder="CODE"
+                      value={codeInput}
+                      onChange={(e) => setCodeInput(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="unlock-btn"
+                      onClick={handleUnlock}
+                    >
+                      UNLOCK
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {outputUrl && (
+              <>
+                <button
+                  type="button"
+                  className="win-btn"
+                  onClick={handleDownload}
+                  disabled={!unlocked}
+                  style={{ marginTop: 6 }}
+                >
+                  {unlocked
+                    ? "⬇ DOWNLOAD XMAS95 PHOTO"
+                    : "Enter unlock code to download"}
+                </button>
+
+                {unlocked && (
+                  <div
+                    style={{
+                      fontSize: 10,
+                      marginTop: 4,
+                      opacity: 0.85
+                    }}
+                  >
+                    On iPhone: if the image opens in a new tab, tap and hold the
+                    photo and choose <b>“Save Photo”</b>.
+                  </div>
+                )}
+              </>
+            )}
+
+            {outputUrl && showShareHint && (
+              <div
+                style={{
+                  fontSize: 10,
+                  marginTop: 4,
+                  opacity: 0.85
+                }}
+              >
+                Tag <span style={{ fontWeight: 700 }}>@kastostudio</span> with{" "}
+                <span style={{ fontWeight: 700 }}>#xmas95</span> on Instagram or
+                TikTok 🎄
+              </div>
+            )}
+          </div>
+
+          <div className="status-bar">
+            <span className={statusClasses}>{status}</span>
+            <span className="status-brand">KASTO Studio · XMAS 95</span>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
