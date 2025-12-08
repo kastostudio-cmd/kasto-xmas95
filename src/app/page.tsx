@@ -20,6 +20,8 @@ export default function Home() {
   const [unlocked, setUnlocked] = useState(false);
   const [codeInput, setCodeInput] = useState("");
   const [showShareHint, setShowShareHint] = useState(false);
+  const [sliderValue, setSliderValue] = useState(50);
+  const [showSlider, setShowSlider] = useState(true);
 
   function setStatusMessage(
     message: string,
@@ -36,6 +38,8 @@ export default function Home() {
       setFile(null);
       setPreviewUrl(null);
       setOutputUrl(null);
+      setUnlocked(false);
+      setShowShareHint(false);
       return;
     }
     setFile(f);
@@ -44,6 +48,8 @@ export default function Home() {
     setOutputUrl(null);
     setUnlocked(false);
     setShowShareHint(false);
+    setSliderValue(50);
+    setShowSlider(true);
     setStatusMessage("Status: Photo loaded. Ready to generate.");
   }
 
@@ -111,6 +117,8 @@ export default function Home() {
       setOutputUrl(data.output as string);
       setUnlocked(false);
       setShowShareHint(false);
+      setSliderValue(50);
+      setShowSlider(true);
       setStatusMessage("Status: Xmas95 photo ready. Unlock to download.");
     } catch (err) {
       console.error(err);
@@ -161,6 +169,26 @@ export default function Home() {
     setShowShareHint(true);
   }
 
+  async function handleCopyCaption() {
+    if (!outputUrl) return;
+    const modeLabel =
+      selectedMode === "party"
+        ? "Party '95"
+        : selectedMode === "home"
+        ? "Home '95"
+        : "Couple '95";
+    const caption = `turned my photo into a 1995 christmas ${modeLabel.toLowerCase()} shot with XMAS95 🎄 try yours at xmas95.app #xmas95 @kastostudio`;
+    try {
+      if (navigator && "clipboard" in navigator) {
+        await navigator.clipboard.writeText(caption);
+      }
+      setShowShareHint(true);
+      setStatusMessage("Status: Caption copied. Post your XMAS95 photo!", {});
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   const displayImage = outputUrl || previewUrl;
 
   let previewLabel = "Preview: Party '95";
@@ -174,6 +202,8 @@ export default function Home() {
   ]
     .filter(Boolean)
     .join(" ");
+
+  const hasBeforeAfter = Boolean(outputUrl && previewUrl);
 
   return (
     <div className="window">
@@ -262,29 +292,157 @@ export default function Home() {
 
             <div className="preview-box">
               {displayImage ? (
-                <div
-                  style={{
-                    width: "100%",
-                    maxWidth: 540,
-                    margin: "0 auto"
-                  }}
-                >
+                hasBeforeAfter && showSlider ? (
                   <div
                     style={{
-                      position: "relative",
                       width: "100%",
-                      aspectRatio: "4 / 5",
-                      overflow: "hidden",
-                      borderRadius: 4,
-                      backgroundColor: "#000",
-                      ...(outputUrl && !unlocked
-                        ? { filter: "blur(3px)" }
-                        : {})
+                      maxWidth: 540,
+                      margin: "0 auto"
                     }}
                   >
-                    <RetroComposer src={displayImage} mode={selectedMode} />
+                    <div
+                      style={{
+                        position: "relative",
+                        width: "100%",
+                        aspectRatio: "4 / 5",
+                        overflow: "hidden",
+                        borderRadius: 4,
+                        backgroundColor: "#000",
+                        ...(outputUrl && !unlocked
+                          ? { filter: "blur(3px)" }
+                          : {})
+                      }}
+                    >
+                      <img
+                        src={previewUrl as string}
+                        alt="Before"
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          display: "block"
+                        }}
+                      />
+                      <div
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          width: `${sliderValue}%`,
+                          overflow: "hidden"
+                        }}
+                      >
+                        <RetroComposer src={outputUrl as string} mode={selectedMode} />
+                      </div>
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: 8,
+                          left: 8,
+                          padding: "2px 6px",
+                          fontSize: 10,
+                          background: "rgba(0,0,0,0.6)",
+                          color: "#fff",
+                          borderRadius: 3
+                        }}
+                      >
+                        BEFORE
+                      </div>
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: 8,
+                          right: 8,
+                          padding: "2px 6px",
+                          fontSize: 10,
+                          background: "rgba(0,0,0,0.6)",
+                          color: "#fff",
+                          borderRadius: 3
+                        }}
+                      >
+                        AFTER
+                      </div>
+                      <div
+                        style={{
+                          position: "absolute",
+                          bottom: 8,
+                          left: 0,
+                          right: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 8,
+                          padding: "0 12px"
+                        }}
+                      >
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          value={sliderValue}
+                          onChange={(e) =>
+                            setSliderValue(Number(e.target.value))
+                          }
+                          style={{ width: "70%" }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowSlider(false)}
+                          className="win-btn"
+                          style={{
+                            fontSize: 10,
+                            padding: "3px 6px",
+                            minWidth: "auto"
+                          }}
+                        >
+                          Single view
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div
+                    style={{
+                      width: "100%",
+                      maxWidth: 540,
+                      margin: "0 auto"
+                    }}
+                  >
+                    <div
+                      style={{
+                        position: "relative",
+                        width: "100%",
+                        aspectRatio: "4 / 5",
+                        overflow: "hidden",
+                        borderRadius: 4,
+                        backgroundColor: "#000",
+                        ...(outputUrl && !unlocked
+                          ? { filter: "blur(3px)" }
+                          : {})
+                      }}
+                    >
+                      <RetroComposer src={displayImage} mode={selectedMode} />
+                      {hasBeforeAfter && (
+                        <button
+                          type="button"
+                          onClick={() => setShowSlider(true)}
+                          className="win-btn"
+                          style={{
+                            position: "absolute",
+                            bottom: 8,
+                            right: 8,
+                            fontSize: 10,
+                            padding: "3px 6px",
+                            minWidth: "auto"
+                          }}
+                        >
+                          Before/After
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )
               ) : (
                 <div
                   className="preview-placeholder"
@@ -395,6 +553,79 @@ export default function Home() {
                     photo and choose <b>“Save Photo”</b>.
                   </div>
                 )}
+
+                <div
+                  style={{
+                    marginTop: 10,
+                    padding: 8,
+                    borderRadius: 4,
+                    border: "1px solid rgba(255,255,255,0.15)",
+                    background: "rgba(0,0,0,0.15)",
+                    fontSize: 11
+                  }}
+                >
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      marginBottom: 4
+                    }}
+                  >
+                    Ready-to-post caption
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: "monospace",
+                      fontSize: 10,
+                      padding: 6,
+                      borderRadius: 3,
+                      background: "rgba(0,0,0,0.4)",
+                      marginBottom: 6
+                    }}
+                  >
+                    turned my photo into a 1995 christmas{" "}
+                    {selectedMode === "party"
+                      ? "party '95"
+                      : selectedMode === "home"
+                      ? "home '95"
+                      : "couple '95"}{" "}
+                    shot with XMAS95 🎄 try yours at xmas95.app #xmas95
+                    {" @kastostudio"}
+                  </div>
+                  <button
+                    type="button"
+                    className="win-btn"
+                    onClick={handleCopyCaption}
+                    style={{ fontSize: 10, padding: "4px 8px" }}
+                  >
+                    COPY CAPTION
+                  </button>
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 10,
+                    padding: 10,
+                    borderRadius: 4,
+                    border: "1px dashed rgba(255,255,255,0.25)",
+                    background: "rgba(0,0,0,0.2)",
+                    fontSize: 11
+                  }}
+                >
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      marginBottom: 4
+                    }}
+                  >
+                    🎄 XMAS95 Challenge
+                  </div>
+                  <div>1) Post your photo on Instagram or TikTok</div>
+                  <div>2) Tag @kastostudio</div>
+                  <div>3) Add hashtag #xmas95challenge</div>
+                  <div style={{ marginTop: 4, opacity: 0.85 }}>
+                    We&apos;re featuring our favorite 1995 Christmas shots.
+                  </div>
+                </div>
               </>
             )}
 
