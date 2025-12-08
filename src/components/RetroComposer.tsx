@@ -119,20 +119,9 @@ export function RetroComposer({ src, mode }: RetroComposerProps) {
       ctx.fillRect(0, 0, width, height);
       ctx.globalCompositeOperation = "source-over";
 
-      ctx.font = "16px 'Courier New', monospace";
-      ctx.fillStyle = "rgba(245,235,220,0.95)";
-      ctx.textAlign = "left";
-      ctx.textBaseline = "bottom";
-      ctx.shadowColor = "rgba(0,0,0,0.65)";
-      ctx.shadowBlur = 3;
-      ctx.fillText("kastostudio xmas '95", 28, height - 26);
-      ctx.shadowBlur = 0;
-
-      // --- Mini Polaroid frame overlay (viral share look) ---
       const framePadding = 18;
       const bottomExtra = 46;
 
-      // dış çerçeve (ince, kirli beyaz)
       ctx.lineWidth = 14;
       ctx.strokeStyle = "rgba(250,245,240,0.95)";
       ctx.strokeRect(
@@ -142,7 +131,6 @@ export function RetroComposer({ src, mode }: RetroComposerProps) {
         height - framePadding * 2
       );
 
-      // alt beyaz şerit (Polaroid hissi)
       ctx.fillStyle = "rgba(250,245,240,0.96)";
       ctx.fillRect(
         framePadding + 4,
@@ -151,7 +139,6 @@ export function RetroComposer({ src, mode }: RetroComposerProps) {
         bottomExtra
       );
 
-      // mode label
       let modeLabel = "PARTY '95";
       if (mode === "home") modeLabel = "HOME '95";
       if (mode === "couple") modeLabel = "COUPLE '95";
@@ -164,6 +151,15 @@ export function RetroComposer({ src, mode }: RetroComposerProps) {
         modeLabel,
         width / 2,
         height - bottomExtra - framePadding / 2
+      );
+
+      ctx.textAlign = "left";
+      ctx.font = "12px 'Courier New', monospace";
+      ctx.fillStyle = "rgba(90,80,70,0.9)";
+      ctx.fillText(
+        "kastostudio xmas '95",
+        framePadding + 12,
+        height - bottomExtra + 10
       );
     };
 
