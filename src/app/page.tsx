@@ -42,6 +42,9 @@ export default function Home() {
     const localUrl = URL.createObjectURL(f);
     setPreviewUrl(localUrl);
     setOutputUrl(null);
+    setUnlocked(false);
+    setShowShareHint(false);
+    setCodeInput("");
     setStatusMessage("Status: Photo loaded. Ready to generate.");
   }
 
@@ -75,7 +78,9 @@ export default function Home() {
 
     try {
       setIsLoading(true);
-      setStatusMessage("Status: Generating Xmas95 photo…", { loading: true });
+      setStatusMessage("Status: Generating your Xmas95 scene…", {
+        loading: true,
+      });
 
       const userImage = await fileToDataUrl(file);
       let vibeKey: "PARTY" | "HOME" | "COUPLE" = "HOME";
@@ -97,7 +102,7 @@ export default function Home() {
 
       const data = await res.json();
       if (!data || !data.output) {
-        setStatusMessage("Status: No image returned from API.", {
+        setStatusMessage("Status: No image returned from AI.", {
           error: true,
         });
         return;
@@ -105,10 +110,13 @@ export default function Home() {
 
       setOutputUrl(data.output as string);
       setShowShareHint(false);
-      setStatusMessage("Status: Xmas95 photo ready. Unlock to download.");
+      setUnlocked(false);
+      setStatusMessage(
+        "Status: Xmas95 photo ready. Enter your code to unlock & download."
+      );
     } catch (err) {
       console.error(err);
-      setStatusMessage("Status: Generation failed. Check console.", {
+      setStatusMessage("Status: Generation failed. Please try again.", {
         error: true,
       });
     } finally {
@@ -119,7 +127,9 @@ export default function Home() {
   function handleUnlock() {
     if (codeInput.trim().toUpperCase() === UNLOCK_CODE) {
       setUnlocked(true);
-      setStatusMessage("Status: Unlocked. You can download your photo now.");
+      setStatusMessage(
+        "Status: Unlocked. Download and post your Xmas95 photo 🎄"
+      );
     } else {
       setUnlocked(false);
       setStatusMessage("Status: Invalid code. Please check your purchase.", {
@@ -181,9 +191,14 @@ export default function Home() {
         <div className="hero-section">
           <div className="pixel-logo">🎄 XMAS 95</div>
           <div className="subtitle">
-            Transform one photo into a 1995 Christmas reality.
+            Turn one photo into a 1995 Christmas party scene in seconds.
           </div>
-          <div className="kasto-tag">crafted by KASTO Studio · Win95 shell</div>
+          <div className="kasto-tag">
+            crafted by KASTO Studio · Win95 shell · made for TikTok & IG Reels
+          </div>
+          <div className="kasto-tag" style={{ fontSize: 10, marginTop: 4 }}>
+            Best results: clear face, no sunglasses, 1–2 people in frame.
+          </div>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -191,13 +206,13 @@ export default function Home() {
             <legend>Step 1: Upload Photo</legend>
             <input type="file" accept="image/*" onChange={handleFileChange} />
             <div className="hint">
-              Party &amp; Home: single person photo. Couple: two people in the
-              same frame.
+              Party &amp; Home: single person selfie or portrait. Couple: two
+              people in the same photo.
             </div>
           </fieldset>
 
           <fieldset>
-            <legend>Step 2: Select Scene</legend>
+            <legend>Step 2: Choose Your Xmas Reality</legend>
             <div className="vibe-list">
               <div
                 className={`vibe-item ${
@@ -207,8 +222,8 @@ export default function Home() {
               >
                 <div className="vibe-title">🎉 Party &apos;95</div>
                 <div className="vibe-desc">
-                  Christmas party vibes, flash photography, festive atmosphere.
-                  Single person.
+                  Flashy office party energy, Christmas drinks, background
+                  crowd. Single person.
                 </div>
               </div>
               <div
@@ -219,7 +234,7 @@ export default function Home() {
               >
                 <div className="vibe-title">🏠 Home &apos;95</div>
                 <div className="vibe-desc">
-                  Cozy living room, Christmas tree, warm lights. Single person.
+                  Ultra-cozy living room, tree, fireplace glow. Single person.
                 </div>
               </div>
               <div
@@ -230,7 +245,7 @@ export default function Home() {
               >
                 <div className="vibe-title">💑 Couple &apos;95</div>
                 <div className="vibe-desc">
-                  Romantic Christmas setting for two people.
+                  Matching sweaters, romantic fireplace scene for two.
                 </div>
               </div>
             </div>
@@ -241,7 +256,7 @@ export default function Home() {
             className="win-btn"
             disabled={isLoading || !file}
           >
-            {isLoading ? "Generating…" : "⭐ GENERATE XMAS95 PHOTO"}
+            {isLoading ? "Generating…" : "⭐ MAKE MY XMAS95 PHOTO"}
           </button>
 
           <div className="preview-wrapper">
@@ -272,8 +287,8 @@ export default function Home() {
                 )
               ) : (
                 <div className="preview-placeholder">
-                  No output yet. Upload a photo and click "Generate Xmas95
-                  Photo".
+                  No output yet. Upload a photo and click &quot;Make my Xmas95
+                  photo&quot;.
                   <div
                     style={{
                       fontSize: 11,
@@ -281,7 +296,8 @@ export default function Home() {
                       opacity: 0.8,
                     }}
                   >
-                    Tip: Start with Party &apos;95 for the most dramatic glow-up.
+                    Tip: Party &apos;95 gives the most dramatic before/after for
+                    posts.
                   </div>
                 </div>
               )}
@@ -291,11 +307,21 @@ export default function Home() {
                   <div
                     style={{
                       fontSize: 12,
-                      marginBottom: 8,
+                      marginBottom: 4,
                       fontWeight: 600,
                     }}
                   >
-                    Unlock your full-resolution Xmas95 photo
+                    Step 3: Unlock &amp; download your Xmas95 photo
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 10,
+                      marginBottom: 8,
+                      opacity: 0.8,
+                    }}
+                  >
+                    Preview is AI-generated already. Enter code to get the
+                    full-resolution file.
                   </div>
 
                   <div className="price-row">
@@ -361,12 +387,26 @@ export default function Home() {
                 style={{
                   fontSize: 10,
                   marginTop: 4,
-                  opacity: 0.85,
+                  opacity: 0.9,
                 }}
               >
-                Tag <span style={{ fontWeight: 700 }}>@kastostudio</span> with{" "}
+                Post it &amp; tag{" "}
+                <span style={{ fontWeight: 700 }}>@kastostudio</span> with{" "}
                 <span style={{ fontWeight: 700 }}>#xmas95</span> on Instagram or
-                TikTok 🎄
+                TikTok 🎄 — we&apos;re featuring the best transformations.
+              </div>
+            )}
+
+            {outputUrl && unlocked && (
+              <div
+                style={{
+                  fontSize: 9,
+                  marginTop: 4,
+                  opacity: 0.7,
+                }}
+              >
+                Mobile tip: if the image opens in a new tab, tap and hold the
+                photo to save it to your camera roll.
               </div>
             )}
           </div>
