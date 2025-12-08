@@ -95,6 +95,45 @@ function normalizeVibe(v: any): Vibe | null {
   return null;
 }
 
+function getPromptStrength(vibe: Vibe): number {
+  switch (vibe) {
+    case "COUPLE":
+      return 0.5;
+    case "PARTY":
+      return 0.65;
+    case "HOME":
+      return 0.6;
+    default:
+      return 0.6;
+  }
+}
+
+function getGuidanceScale(vibe: Vibe): number {
+  switch (vibe) {
+    case "COUPLE":
+      return 5;
+    case "PARTY":
+      return 5.3;
+    case "HOME":
+      return 5.1;
+    default:
+      return 5.1;
+  }
+}
+
+function getNumInferenceSteps(vibe: Vibe): number {
+  switch (vibe) {
+    case "COUPLE":
+      return 30;
+    case "PARTY":
+      return 32;
+    case "HOME":
+      return 30;
+    default:
+      return 30;
+  }
+}
+
 function buildPrompt(vibe: Vibe): string {
   const absoluteFacePreservation = [
     "Input face is the absolute ground truth",
@@ -108,19 +147,21 @@ function buildPrompt(vibe: Vibe): string {
     "Do not change the jawline, nose, lips, or eye shape at all",
     "Do not alter makeup style, freckles, moles, scars, or facial hair patterns",
     "Hairline, hair volume, hair length, and hairstyle must remain consistent with the input image",
-    "Hair color should remain the same, only slight lighting changes are allowed"
+    "Hair color must remain the same, only subtle lighting shifts are allowed",
+    "Face must remain photorealistic, not stylized, not cartoon, not illustration"
   ].join(", ");
 
   const cinematicQuality = [
+    "Photorealistic ultra-detailed photograph",
     "Shot on Kodak Portra 400 film",
-    "Cinematic lighting",
+    "Cinematic lighting but still natural",
     "High-end fashion editorial look",
     "Incredible depth of field",
     "Detailed textures",
-    "Atmospheric lighting",
-    "Film grain",
+    "Very subtle film grain",
     "8k resolution",
-    "Masterpiece"
+    "Masterpiece",
+    "Looks like a real camera photo, not AI generated"
   ].join(", ");
 
   const physicalIntegration = [
@@ -134,7 +175,7 @@ function buildPrompt(vibe: Vibe): string {
   ].join(", ");
 
   const christmasClothingRequirement = [
-    "COMPLETELY REPLACE ORIGINAL OUTFIT",
+    "COMPLETELY REPLACE ORIGINAL OUTFIT BUT KEEP BODY SHAPE AND PROPORTIONS IDENTICAL",
     "The subject is wearing high-quality, unisex, premium Christmas attire",
     "Clothing must be gender-neutral and stylish",
     "Fabric texture must be visible and look expensive",
@@ -216,7 +257,7 @@ function buildPrompt(vibe: Vibe): string {
 function buildNegativePrompt(): string {
   return [
     "extreme close up, tight framing, face filling the screen",
-    "ugly, tiling, poorly drawn hands, poorly drawn feet, poorly drawn face, out of frame, extra limbs, disfigured, deformed",
+    "ugly, tiling, poorly drawn hands, poorly drawn feet, poorly drawn face, extra limbs, disfigured, deformed",
     "body out of frame, blurry, bad anatomy, blurred, watermark, grainy, signature, cut off, draft",
     "bad eyes, dead eyes, crossed eyes, asymmetry",
     "glowing eyes, eyes emitting light, bright white eyes, hollow eyes, eyeless, no pupils, no iris",
@@ -225,6 +266,7 @@ function buildNegativePrompt(): string {
     "passport photo, mugshot, id photo, floating head",
     "distorted clothing, melting clothes, merging bodies",
     "cartoon, anime, 3d render, sketch, illustration, painting",
+    "stylized, painting-like, digital art, illustration style",
     "motion blur on face, ghosting",
     "feminine clothing on male subject, masculine clothing on female subject"
   ].join(", ");
@@ -282,15 +324,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const basePrompt = buildPrompt(normalizedVibe);
-    const fullPrompt = `${basePrompt}. Avoid: ${buildNegativePrompt()}`;
-
     const input = {
-      prompt: fullPrompt,
+      prompt: buildPrompt(normalizedVibe),
       input_image: userImage,
-      aspect_ratio: "3:4",
+      aspect_ratio: "4:5",
       output_format: "jpg",
-      safety_tolerance: 2
+      safety_tolerance: 2,
+      prompt_strength: getPromptStrength(normalizedVibe),
+      guidance_scale: getGuidanceScale(normalizedVibe),
+      num_inference_steps: getNumInferenceSteps(normalizedVibe),
+      negative_prompt: buildNegativePrompt()
     };
 
     const output = (await replicate.run(REPLICATE_MODEL, {
@@ -316,7 +359,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(
-      { status: "success", output: outputUrl },
+      { status: "success", output: outputUrl, vibe: normalizedVibe },
       { status: 200 }
     );
   } catch (error: any) {
