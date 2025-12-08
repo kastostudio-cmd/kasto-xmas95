@@ -394,10 +394,11 @@ export async function POST(req: NextRequest) {
     const timeoutMs = maxDuration * 1000 - TIMEOUT_BUFFER;
 
     while (
-      result.status === "starting" ||
-      result.status === "processing" ||
-      result.status === "queued"
-    ) {
+  result.status === "starting" ||
+  result.status === "processing" ||
+  (result.status as any) === "queued"
+) {
+
       if (Date.now() - startedAt > timeoutMs) {
         try {
           await replicate.predictions.cancel(prediction.id);
