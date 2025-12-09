@@ -10,7 +10,7 @@ type RetroComposerProps = {
 
 export function RetroComposer({ src, mode, canvasRef }: RetroComposerProps) {
   const internalRef = useRef<HTMLCanvasElement | null>(null);
-  const effectiveRef = canvasRef || internalRef;
+  const effectiveRef = canvasRef ?? internalRef;
 
   useEffect(() => {
     const canvas = effectiveRef.current;
@@ -18,10 +18,6 @@ export function RetroComposer({ src, mode, canvasRef }: RetroComposerProps) {
 
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) return;
-    if (!src) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      return;
-    }
 
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -60,16 +56,14 @@ export function RetroComposer({ src, mode, canvasRef }: RetroComposerProps) {
       let warm = 0.18;
       let grain = 6;
       let vignette = 0.32;
-      let leakStrength = 0.32;
 
       if (mode === "party") {
-        brightness = 1.06;
-        contrast = 1.0;
-        saturate = 1.16;
-        warm = 0.24;
-        grain = 7.5;
+        brightness = 1.05;
+        contrast = 0.97;
+        saturate = 1.12;
+        warm = 0.22;
+        grain = 7;
         vignette = 0.3;
-        leakStrength = 0.42;
       } else if (mode === "home") {
         brightness = 1.02;
         contrast = 0.98;
@@ -77,15 +71,13 @@ export function RetroComposer({ src, mode, canvasRef }: RetroComposerProps) {
         warm = 0.21;
         grain = 5.5;
         vignette = 0.28;
-        leakStrength = 0.28;
       } else if (mode === "couple") {
-        brightness = 0.99;
-        contrast = 1.06;
+        brightness = 0.98;
+        contrast = 1.04;
         saturate = 1.04;
-        warm = 0.25;
+        warm = 0.24;
         grain = 5;
         vignette = 0.4;
-        leakStrength = 0.24;
       }
 
       ctx.imageSmoothingEnabled = true;
@@ -113,7 +105,7 @@ export function RetroComposer({ src, mode, canvasRef }: RetroComposerProps) {
         let factor = dist / maxRadius;
         factor = Math.min(1, Math.max(0, factor));
 
-        const centerPreserve = 0.2;
+        const centerPreserve = 0.25;
         const edgeBoost = 1;
         const grainFactor =
           centerPreserve + (edgeBoost - centerPreserve) * factor;
@@ -147,7 +139,7 @@ export function RetroComposer({ src, mode, canvasRef }: RetroComposerProps) {
 
       const leak = ctx.createLinearGradient(width * 0.65, 0, width, height);
       leak.addColorStop(0, "rgba(255,180,120,0)");
-      leak.addColorStop(1, `rgba(255,120,80,${leakStrength})`);
+      leak.addColorStop(1, "rgba(255,120,80,0.35)");
       ctx.globalCompositeOperation = "screen";
       ctx.fillStyle = leak;
       ctx.fillRect(0, 0, width, height);
