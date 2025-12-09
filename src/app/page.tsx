@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { RetroComposer } from "../components/RetroComposer";
 
 const UNLOCK_CODE = "XMAS95";
@@ -20,7 +20,6 @@ export default function Home() {
   const [unlocked, setUnlocked] = useState(false);
   const [codeInput, setCodeInput] = useState("");
   const [showShareHint, setShowShareHint] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   function setStatusMessage(
     message: string,
@@ -211,36 +210,21 @@ export default function Home() {
   function handleDownload() {
     if (!outputUrl) return;
 
-    const canvas = canvasRef.current;
+    const isIOS =
+      typeof navigator !== "undefined" &&
+      /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-    if (canvas) {
-      const dataUrl = canvas.toDataURL("image/png");
-
-      const isIOS =
-        typeof navigator !== "undefined" &&
-        /iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-      if (isIOS) {
-        const link = document.createElement("a");
-        link.href = dataUrl;
-        link.target = "_blank";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } else {
-        const link = document.createElement("a");
-        link.href = dataUrl;
-        link.download = "xmas95-photo.png";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
-
-      setShowShareHint(true);
-      return;
+    if (isIOS) {
+      window.open(outputUrl, "_blank");
+    } else {
+      const link = document.createElement("a");
+      link.href = outputUrl;
+      link.download = "xmas95-photo.jpg";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
 
-    window.open(outputUrl, "_blank");
     setShowShareHint(true);
   }
 
@@ -353,6 +337,7 @@ export default function Home() {
             type="submit"
             className="win-btn"
             disabled={isLoading || !file}
+            style={{ marginTop: 8, position: "relative", zIndex: 20 }}
           >
             {isLoading ? "Generating…" : "⭐ GENERATE XMAS95 PHOTO"}
           </button>
@@ -388,11 +373,7 @@ export default function Home() {
                     }}
                   >
                     {outputUrl ? (
-                      <RetroComposer
-                        src={outputUrl}
-                        mode={selectedMode}
-                        canvasRef={canvasRef}
-                      />
+                      <RetroComposer src={outputUrl} mode={selectedMode} />
                     ) : (
                       <img
                         src={previewUrl as string}
@@ -408,14 +389,7 @@ export default function Home() {
                   </div>
 
                   {outputUrl && !unlocked && (
-                    <div
-                      className="paywall-overlay"
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        zIndex: 5
-                      }}
-                    >
+                    <div className="paywall-overlay">
                       <div
                         style={{
                           fontSize: 12,
