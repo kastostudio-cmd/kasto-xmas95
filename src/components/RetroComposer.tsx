@@ -16,6 +16,10 @@ export function RetroComposer({ src, mode }: RetroComposerProps) {
 
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) return;
+    if (!src) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      return;
+    }
 
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -54,14 +58,16 @@ export function RetroComposer({ src, mode }: RetroComposerProps) {
       let warm = 0.18;
       let grain = 6;
       let vignette = 0.32;
+      let leakStrength = 0.32;
 
       if (mode === "party") {
-        brightness = 1.05;
-        contrast = 0.97;
-        saturate = 1.12;
-        warm = 0.22;
-        grain = 7;
+        brightness = 1.06;
+        contrast = 1.0;
+        saturate = 1.16;
+        warm = 0.24;
+        grain = 7.5;
         vignette = 0.3;
+        leakStrength = 0.42;
       } else if (mode === "home") {
         brightness = 1.02;
         contrast = 0.98;
@@ -69,16 +75,20 @@ export function RetroComposer({ src, mode }: RetroComposerProps) {
         warm = 0.21;
         grain = 5.5;
         vignette = 0.28;
+        leakStrength = 0.28;
       } else if (mode === "couple") {
-        brightness = 0.98;
-        contrast = 1.04;
+        brightness = 0.99;
+        contrast = 1.06;
         saturate = 1.04;
-        warm = 0.24;
+        warm = 0.25;
         grain = 5;
         vignette = 0.4;
+        leakStrength = 0.24;
       }
 
       ctx.imageSmoothingEnabled = true;
+      // @ts-expect-error
+      ctx.imageSmoothingQuality = "high";
       ctx.filter = `brightness(${brightness}) contrast(${contrast}) saturate(${saturate})`;
       ctx.drawImage(img, dx, dy, drawWidth, drawHeight);
       ctx.filter = "none";
@@ -102,7 +112,7 @@ export function RetroComposer({ src, mode }: RetroComposerProps) {
         let factor = dist / maxRadius;
         factor = Math.min(1, Math.max(0, factor));
 
-        const centerPreserve = 0.25;
+        const centerPreserve = 0.2;
         const edgeBoost = 1;
         const grainFactor =
           centerPreserve + (edgeBoost - centerPreserve) * factor;
@@ -136,7 +146,7 @@ export function RetroComposer({ src, mode }: RetroComposerProps) {
 
       const leak = ctx.createLinearGradient(width * 0.65, 0, width, height);
       leak.addColorStop(0, "rgba(255,180,120,0)");
-      leak.addColorStop(1, "rgba(255,120,80,0.35)");
+      leak.addColorStop(1, `rgba(255,120,80,${leakStrength})`);
       ctx.globalCompositeOperation = "screen";
       ctx.fillStyle = leak;
       ctx.fillRect(0, 0, width, height);
