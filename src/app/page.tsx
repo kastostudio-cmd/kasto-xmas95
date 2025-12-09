@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { RetroComposer } from "../components/RetroComposer";
 
 const UNLOCK_CODE = "XMAS95";
@@ -20,8 +20,7 @@ export default function Home() {
   const [unlocked, setUnlocked] = useState(false);
   const [codeInput, setCodeInput] = useState("");
   const [showShareHint, setShowShareHint] = useState(false);
-  const [sliderValue, setSliderValue] = useState(50);
-  const [showSlider, setShowSlider] = useState(true);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   function setStatusMessage(
     message: string,
@@ -48,8 +47,6 @@ export default function Home() {
     setOutputUrl(null);
     setUnlocked(false);
     setShowShareHint(false);
-    setSliderValue(50);
-    setShowSlider(true);
     setStatusMessage("Status: Photo loaded. Ready to generate.");
   }
 
@@ -64,58 +61,57 @@ export default function Home() {
     }
   }
 
-function fileToDataUrl(f: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
+  function fileToDataUrl(f: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
 
-    reader.onload = () => {
-      if (!reader.result || typeof reader.result !== "string") {
-        reject(new Error("Invalid file reader result"));
-        return;
-      }
-
-      const img = new Image();
-      img.onload = () => {
-        const maxSize = 1536;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > maxSize || height > maxSize) {
-          if (width > height) {
-            height = (height / width) * maxSize;
-            width = maxSize;
-          } else {
-            width = (width / height) * maxSize;
-            height = maxSize;
-          }
-        }
-
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.round(width);
-        canvas.height = Math.round(height);
-
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          reject(new Error("Canvas context error"));
+      reader.onload = () => {
+        if (!reader.result || typeof reader.result !== "string") {
+          reject(new Error("Invalid file reader result"));
           return;
         }
 
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
-        resolve(dataUrl);
+        const img = new Image();
+        img.onload = () => {
+          const maxSize = 1536;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxSize || height > maxSize) {
+            if (width > height) {
+              height = (height / width) * maxSize;
+              width = maxSize;
+            } else {
+              width = (width / height) * maxSize;
+              height = maxSize;
+            }
+          }
+
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.round(width);
+          canvas.height = Math.round(height);
+
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            reject(new Error("Canvas context error"));
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+          resolve(dataUrl);
+        };
+
+        img.onerror = () => reject(new Error("Image load error"));
+        img.src = reader.result;
       };
 
-      img.onerror = () => reject(new Error("Image load error"));
-      img.src = reader.result;
-    };
+      reader.onerror = () =>
+        reject(reader.error || new Error("File read error"));
 
-    reader.onerror = () =>
-      reject(reader.error || new Error("File read error"));
-
-    reader.readAsDataURL(f);
-  });
-}
-
+      reader.readAsDataURL(f);
+    });
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -158,8 +154,6 @@ function fileToDataUrl(f: File): Promise<string> {
       setOutputUrl(data.output as string);
       setUnlocked(false);
       setShowShareHint(false);
-      setSliderValue(50);
-      setShowSlider(true);
       setStatusMessage("Status: Xmas95 photo ready. Unlock to download.");
       const previewContainer = document.querySelector(
         ".preview-wrapper"
@@ -198,42 +192,35 @@ function fileToDataUrl(f: File): Promise<string> {
   }
 
   function handleDownload() {
-  if (!outputUrl) return;
+    if (!outputUrl) return;
 
-  const canvas = document.querySelector<HTMLCanvasElement>("#xmas95-canvas");
+    const canvas = canvasRef.current;
 
-  if (canvas) {
-    const dataUrl = canvas.toDataURL("image/png");
+    if (canvas) {
+      const dataUrl = canvas.toDataURL("image/png");
 
-    const isIOS =
-      typeof navigator !== "undefined" &&
-      /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const isIOS =
+        typeof navigator !== "undefined" &&
+        /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-    if (isIOS) {
-      const win = window.open();
-      if (win) {
-        win.document.write(
-          `<img src="${dataUrl}" style="width:100%;height:auto;display:block;" />`
-        );
-        win.document.close();
+      if (isIOS) {
+        window.open(dataUrl, "_blank");
+      } else {
+        const link = document.createElement("a");
+        link.href = dataUrl;
+        link.download = "xmas95-photo.png";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       }
-    } else {
-      const link = document.createElement("a");
-      link.href = dataUrl;
-      link.download = "xmas95-photo.png";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+
+      setShowShareHint(true);
+      return;
     }
 
+    window.open(outputUrl, "_blank");
     setShowShareHint(true);
-    return;
   }
-
-  window.open(outputUrl, "_blank");
-  setShowShareHint(true);
-}
-
 
   async function handleCopyCaption() {
     if (!outputUrl) return;
@@ -255,8 +242,6 @@ function fileToDataUrl(f: File): Promise<string> {
     }
   }
 
-  const displayImage = outputUrl || previewUrl;
-
   let previewLabel = "Preview: Party '95";
   if (selectedMode === "home") previewLabel = "Preview: Home '95";
   if (selectedMode === "couple") previewLabel = "Preview: Couple '95";
@@ -269,7 +254,7 @@ function fileToDataUrl(f: File): Promise<string> {
     .filter(Boolean)
     .join(" ");
 
-  const hasBeforeAfter = Boolean(outputUrl && previewUrl);
+  const hasAnyImage = Boolean(outputUrl || previewUrl);
 
   return (
     <div className="window">
@@ -357,161 +342,104 @@ function fileToDataUrl(f: File): Promise<string> {
             </div>
 
             <div className="preview-box">
-              {displayImage ? (
-                hasBeforeAfter && showSlider ? (
+              {hasAnyImage ? (
+                <div
+                  style={{
+                    width: "100%",
+                    maxWidth: 540,
+                    margin: "0 auto",
+                    position: "relative",
+                    zIndex: 1
+                  }}
+                >
                   <div
                     style={{
+                      position: "relative",
                       width: "100%",
-                      maxWidth: 540,
-                      margin: "0 auto"
+                      aspectRatio: "4 / 5",
+                      overflow: "hidden",
+                      borderRadius: 4,
+                      backgroundColor: "#000",
+                      ...(outputUrl && !unlocked
+                        ? { filter: "blur(3px)" }
+                        : {})
                     }}
                   >
-                    <div
-                      style={{
-                        position: "relative",
-                        width: "100%",
-                        aspectRatio: "4 / 5",
-                        overflow: "hidden",
-                        borderRadius: 4,
-                        backgroundColor: "#000",
-                        ...(outputUrl && !unlocked
-                          ? { filter: "blur(3px)" }
-                          : {})
-                      }}
-                    >
+                    {outputUrl ? (
+                      <RetroComposer
+                        src={outputUrl}
+                        mode={selectedMode}
+                        canvasRef={canvasRef}
+                      />
+                    ) : (
                       <img
                         src={previewUrl as string}
-                        alt="Before"
+                        alt="Preview"
                         style={{
-                          position: "absolute",
-                          inset: 0,
                           width: "100%",
                           height: "100%",
                           objectFit: "cover",
                           display: "block"
                         }}
                       />
+                    )}
+                  </div>
+
+                  {outputUrl && !unlocked && (
+                    <div className="paywall-overlay">
                       <div
                         style={{
-                          position: "absolute",
-                          inset: 0,
-                          width: `${sliderValue}%`,
-                          overflow: "hidden"
+                          fontSize: 12,
+                          marginBottom: 8,
+                          fontWeight: 600
                         }}
                       >
-                        <RetroComposer
-                          src={outputUrl as string}
-                          mode={selectedMode}
-                        />
+                        Unlock your full-resolution Xmas95 photo
                       </div>
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: 8,
-                          left: 8,
-                          padding: "2px 6px",
-                          fontSize: 10,
-                          background: "rgba(0,0,0,0.6)",
-                          color: "#fff",
-                          borderRadius: 3
-                        }}
-                      >
-                        BEFORE
+
+                      <div className="price-row">
+                        <a
+                          href={TURKEY_URL}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="buy-btn"
+                        >
+                          <span>Türkiye</span>
+                          <span style={{ fontSize: 10 }}>Pay with iyzico</span>
+                        </a>
+                        <a
+                          href={GLOBAL_URL}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="buy-btn"
+                        >
+                          <span>Global</span>
+                          <span style={{ fontSize: 10 }}>Pay with Gumroad</span>
+                        </a>
                       </div>
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: 8,
-                          right: 8,
-                          padding: "2px 6px",
-                          fontSize: 10,
-                          background: "rgba(0,0,0,0.6)",
-                          color: "#fff",
-                          borderRadius: 3
-                        }}
-                      >
-                        AFTER
+
+                      <div style={{ fontSize: 10, marginBottom: 4 }}>
+                        After purchase you will receive the unlock code.
                       </div>
-                      <div
-                        style={{
-                          position: "absolute",
-                          bottom: 8,
-                          left: 0,
-                          right: 0,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 8,
-                          padding: "0 12px"
-                        }}
-                      >
+
+                      <div className="code-input-area">
                         <input
-                          type="range"
-                          min={0}
-                          max={100}
-                          value={sliderValue}
-                          onChange={(e) =>
-                            setSliderValue(Number(e.target.value))
-                          }
-                          style={{ width: "70%" }}
+                          className="code-input"
+                          placeholder="CODE"
+                          value={codeInput}
+                          onChange={(e) => setCodeInput(e.target.value)}
                         />
                         <button
                           type="button"
-                          onClick={() => setShowSlider(false)}
-                          className="win-btn"
-                          style={{
-                            fontSize: 10,
-                            padding: "3px 6px",
-                            minWidth: "auto"
-                          }}
+                          className="unlock-btn"
+                          onClick={handleUnlock}
                         >
-                          Single view
+                          UNLOCK
                         </button>
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  <div
-                    style={{
-                      width: "100%",
-                      maxWidth: 540,
-                      margin: "0 auto"
-                    }}
-                  >
-                    <div
-                      style={{
-                        position: "relative",
-                        width: "100%",
-                        aspectRatio: "4 / 5",
-                        overflow: "hidden",
-                        borderRadius: 4,
-                        backgroundColor: "#000",
-                        ...(outputUrl && !unlocked
-                          ? { filter: "blur(3px)" }
-                          : {})
-                      }}
-                    >
-                      <RetroComposer src={displayImage} mode={selectedMode} />
-                      {hasBeforeAfter && (
-                        <button
-                          type="button"
-                          onClick={() => setShowSlider(true)}
-                          className="win-btn"
-                          style={{
-                            position: "absolute",
-                            bottom: 8,
-                            right: 8,
-                            fontSize: 10,
-                            padding: "3px 6px",
-                            minWidth: "auto"
-                          }}
-                        >
-                          Before/After
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )
+                  )}
+                </div>
               ) : (
                 <div
                   className="preview-placeholder"
@@ -539,61 +467,6 @@ function fileToDataUrl(f: File): Promise<string> {
                   </div>
                 </div>
               )}
-
-              {outputUrl && !unlocked && (
-                <div className="paywall-overlay">
-                  <div
-                    style={{
-                      fontSize: 12,
-                      marginBottom: 8,
-                      fontWeight: 600
-                    }}
-                  >
-                    Unlock your full-resolution Xmas95 photo
-                  </div>
-
-                  <div className="price-row">
-                    <a
-                      href={TURKEY_URL}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="buy-btn"
-                    >
-                      <span>Türkiye</span>
-                      <span style={{ fontSize: 10 }}>Pay with iyzico</span>
-                    </a>
-                    <a
-                      href={GLOBAL_URL}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="buy-btn"
-                    >
-                      <span>Global</span>
-                      <span style={{ fontSize: 10 }}>Pay with Gumroad</span>
-                    </a>
-                  </div>
-
-                  <div style={{ fontSize: 10, marginBottom: 4 }}>
-                    After purchase you will receive the unlock code.
-                  </div>
-
-                  <div className="code-input-area">
-                    <input
-                      className="code-input"
-                      placeholder="CODE"
-                      value={codeInput}
-                      onChange={(e) => setCodeInput(e.target.value)}
-                    />
-                    <button
-                      type="button"
-                      className="unlock-btn"
-                      onClick={handleUnlock}
-                    >
-                      UNLOCK
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
 
             {outputUrl && (
@@ -602,7 +475,7 @@ function fileToDataUrl(f: File): Promise<string> {
                   style={{
                     marginTop: 6,
                     position: "relative",
-                    zIndex: 5
+                    zIndex: 10
                   }}
                 >
                   <button
