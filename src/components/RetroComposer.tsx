@@ -5,15 +5,13 @@ type Mode = "party" | "home" | "couple";
 type RetroComposerProps = {
   src: string;
   mode: Mode;
-  canvasRef?: React.RefObject<HTMLCanvasElement>;
 };
 
-export function RetroComposer({ src, mode, canvasRef }: RetroComposerProps) {
-  const internalRef = useRef<HTMLCanvasElement | null>(null);
-  const effectiveRef = canvasRef ?? internalRef;
+export function RetroComposer({ src, mode }: RetroComposerProps) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
-    const canvas = effectiveRef.current;
+    const canvas = canvasRef.current;
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
@@ -51,37 +49,37 @@ export function RetroComposer({ src, mode, canvasRef }: RetroComposerProps) {
       }
 
       let brightness = 1.03;
-      let contrast = 0.95;
-      let saturate = 1.06;
-      let warm = 0.18;
-      let grain = 6;
-      let vignette = 0.32;
+      let contrast = 0.98;
+      let saturate = 1.08;
+      let warm = 0.2;
+      let grain = 5.2;
+      let vignette = 0.3;
 
       if (mode === "party") {
-        brightness = 1.05;
-        contrast = 0.97;
-        saturate = 1.12;
-        warm = 0.22;
-        grain = 7;
-        vignette = 0.3;
-      } else if (mode === "home") {
-        brightness = 1.02;
-        contrast = 0.98;
-        saturate = 1.06;
-        warm = 0.21;
-        grain = 5.5;
-        vignette = 0.28;
-      } else if (mode === "couple") {
-        brightness = 0.98;
-        contrast = 1.04;
-        saturate = 1.04;
+        brightness = 1.06;
+        contrast = 1.02;
+        saturate = 1.16;
         warm = 0.24;
+        grain = 5.4;
+        vignette = 0.28;
+      } else if (mode === "home") {
+        brightness = 1.03;
+        contrast = 1.0;
+        saturate = 1.1;
+        warm = 0.23;
         grain = 5;
-        vignette = 0.4;
+        vignette = 0.27;
+      } else if (mode === "couple") {
+        brightness = 1.0;
+        contrast = 1.03;
+        saturate = 1.06;
+        warm = 0.25;
+        grain = 4.5;
+        vignette = 0.32;
       }
 
       ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = "high";
+      (ctx as any).imageSmoothingQuality = "high";
       ctx.filter = `brightness(${brightness}) contrast(${contrast}) saturate(${saturate})`;
       ctx.drawImage(img, dx, dy, drawWidth, drawHeight);
       ctx.filter = "none";
@@ -120,7 +118,7 @@ export function RetroComposer({ src, mode, canvasRef }: RetroComposerProps) {
       ctx.putImageData(imageData, 0, 0);
 
       ctx.globalCompositeOperation = "soft-light";
-      ctx.fillStyle = `rgba(255, 208, 160, ${warm})`;
+      ctx.fillStyle = `rgba(255, 215, 170, ${warm})`;
       ctx.fillRect(0, 0, width, height);
       ctx.globalCompositeOperation = "source-over";
 
@@ -139,7 +137,7 @@ export function RetroComposer({ src, mode, canvasRef }: RetroComposerProps) {
 
       const leak = ctx.createLinearGradient(width * 0.65, 0, width, height);
       leak.addColorStop(0, "rgba(255,180,120,0)");
-      leak.addColorStop(1, "rgba(255,120,80,0.35)");
+      leak.addColorStop(1, "rgba(255,120,80,0.32)");
       ctx.globalCompositeOperation = "screen";
       ctx.fillStyle = leak;
       ctx.fillRect(0, 0, width, height);
@@ -190,12 +188,12 @@ export function RetroComposer({ src, mode, canvasRef }: RetroComposerProps) {
     };
 
     img.src = src;
-  }, [src, mode, effectiveRef]);
+  }, [src, mode]);
 
   return (
     <canvas
       id="xmas95-canvas"
-      ref={effectiveRef}
+      ref={canvasRef}
       width={768}
       height={960}
       style={{ width: "100%", height: "100%", display: "block" }}
