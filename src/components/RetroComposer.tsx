@@ -5,13 +5,15 @@ type Mode = "party" | "home" | "couple";
 type RetroComposerProps = {
   src: string;
   mode: Mode;
+  canvasRef?: React.RefObject<HTMLCanvasElement>;
 };
 
-export function RetroComposer({ src, mode }: RetroComposerProps) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+export function RetroComposer({ src, mode, canvasRef }: RetroComposerProps) {
+  const internalRef = useRef<HTMLCanvasElement | null>(null);
+  const effectiveRef = canvasRef || internalRef;
 
   useEffect(() => {
-    const canvas = canvasRef.current;
+    const canvas = effectiveRef.current;
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
@@ -197,12 +199,12 @@ export function RetroComposer({ src, mode }: RetroComposerProps) {
     };
 
     img.src = src;
-  }, [src, mode]);
+  }, [src, mode, effectiveRef]);
 
   return (
     <canvas
       id="xmas95-canvas"
-      ref={canvasRef}
+      ref={effectiveRef}
       width={768}
       height={960}
       style={{ width: "100%", height: "100%", display: "block" }}
