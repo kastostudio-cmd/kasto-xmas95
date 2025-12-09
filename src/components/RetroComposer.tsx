@@ -89,7 +89,6 @@ export function RetroComposer({ src, mode, canvasRef }: RetroComposerProps) {
       }
 
       ctx.imageSmoothingEnabled = true;
-      // @ts-expect-error
       ctx.imageSmoothingQuality = "high";
       ctx.filter = `brightness(${brightness}) contrast(${contrast}) saturate(${saturate})`;
       ctx.drawImage(img, dx, dy, drawWidth, drawHeight);
