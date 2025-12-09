@@ -83,24 +83,24 @@ function normalizeVibe(v: any): Vibe | null {
 function getPromptStrength(vibe: Vibe): number {
   switch (vibe) {
     case "COUPLE":
-      return 0.7;
+      return 0.64;
     case "PARTY":
-      return 0.78;
+      return 0.7;
     case "HOME":
-      return 0.74;
+      return 0.66;
     default:
-      return 0.74;
+      return 0.66;
   }
 }
 
 function getGuidanceScale(vibe: Vibe): number {
   switch (vibe) {
     case "COUPLE":
-      return 5.0;
-    case "PARTY":
       return 5.2;
+    case "PARTY":
+      return 5.1;
     case "HOME":
-      return 5.0;
+      return 4.9;
     default:
       return 5.0;
   }
@@ -120,8 +120,8 @@ function getNumInferenceSteps(vibe: Vibe): number {
 }
 
 function buildPrompt(vibe: Vibe): string {
-  const identityLock = [
-    "Input face is the absolute ground truth",
+  const identityLockSingle = [
+    "Use the input face as the absolute ground truth",
     "Reproduce the face with 1:1 accuracy compared to the input",
     "No beautification, no symmetry correction, no smoothing",
     "No face reshaping, no slimming, no jawline modification",
@@ -135,16 +135,32 @@ function buildPrompt(vibe: Vibe): string {
     "Face must remain fully photorealistic and not stylized in any way"
   ].join(", ");
 
+  const identityLockCouple = [
+    "There are exactly two real people in the input photo",
+    "Keep both original people from the input, do not merge or replace them",
+    "Both faces must match their original input perfectly with no stylization",
+    "No new faces, no extra people, no face swapping",
+    "No beautification, no symmetry correction, no smoothing on either face",
+    "Preserve each person’s bone structure, jawline, cheek volume, nose shape, lip thickness",
+    "Preserve each person’s eyebrow angle, density, spacing, eyelid structure, eye shape",
+    "Preserve each person’s iris color and pattern with natural reflections",
+    "Preserve each person’s freckles, moles, pores, skin texture, micro details",
+    "Preserve hairline, hair volume, hair length and hairstyle for both",
+    "Expressions must remain identical for both people",
+    "No head enlargement, no neck shortening, no cartoon look",
+    "Faces must remain fully photorealistic and not stylized in any way"
+  ].join(", ");
+
   const faceSafe = [
     "Apply retro color grading mainly to background and clothes",
-    "Do not over-stylize the face",
-    "Face must stay crisp, detailed, sharp and realistic",
+    "Do not over-stylize the faces",
+    "Faces must stay crisp, detailed, sharp and realistic",
     "Avoid blur, haze, glow or excessive film grain on the facial region"
   ].join(", ");
 
   const cinematic = [
-    "Hyper-realistic 35mm film photograph of a real person, not illustration, not CGI, not AI-art",
-    "Photorealistic 90s Christmas aesthetic",
+    "Hyper-realistic 35mm film photograph of real people, not illustration, not CGI, not AI-art",
+    "Photorealistic 1990s Christmas aesthetic",
     "Shot on Kodak Portra 400 style film",
     "Subtle film grain",
     "Warm nostalgic lighting",
@@ -157,10 +173,8 @@ function buildPrompt(vibe: Vibe): string {
   const integration = [
     "Perfect physical integration into the room",
     "Correct perspective, scale, shadow and lighting match",
-    "Subject stands or sits naturally with proper grounding",
-    "No floating, no cutout effect",
-    "Completely replace the original background with a new Christmas environment",
-    "Original background, walls and furniture from the input image must not be visible"
+    "Subjects stand or sit naturally with proper grounding",
+    "No floating, no cutout effect"
   ].join(", ");
 
   const framing = [
@@ -173,80 +187,52 @@ function buildPrompt(vibe: Vibe): string {
   ].join(", ");
 
   if (vibe === "PARTY") {
-    const clothing = [
-      "Change the outfit into stylish 1990s Christmas office party clothes",
-      "Long-sleeve satin or velvet dress or shirt in deep red, green or black with subtle sparkle",
-      "No casual tank tops or basic shirts visible",
-      "Original clothes from the input image must not be visible at all"
-    ].join(", ");
-
-    const scene = [
-      "Crowded 1990s office Christmas party photo with direct flash",
-      "People dancing blurred in the background",
-      "Decorations: fairy lights, tinsel, garlands, big Christmas tree",
-      "Lighting: harsh flash plus moody room shadows"
-    ].join(", ");
-
     return [
-      "Hyper-realistic 1990s office Christmas party scene",
-      scene,
-      clothing,
+      "Hyper-realistic 1990s office Christmas party photo with direct flash",
+      "Crowded room, people dancing blurred in the background",
+      "Decorations: fairy lights, tinsel, garlands, big Christmas tree",
+      "Lighting: harsh on-camera flash plus moody room shadows",
+      "Change the outfit to a stylish 1990s Christmas party look",
+      "For men: smart shirt or blazer, no satin blouse, no dress, no overly feminine clothing",
+      "For women: festive but tasteful 90s party outfit, not overly revealing",
+      "Ignore and remove any handheld objects from the input such as flowers, coffee cups, mugs, phones or glasses",
       cinematic,
       integration,
       framing,
       faceSafe,
-      identityLock
+      identityLockSingle
     ].join(", ");
   }
 
   if (vibe === "HOME") {
-    const clothing = [
-      "Replace the outfit with cozy 1990s knitted Christmas sweaters",
-      "Red, cream and forest green color palette",
-      "No bare shoulders, no camisole, no tank top",
-      "Original outfit from the input photo must not be visible"
-    ].join(", ");
-
-    const scene = [
-      "Cozy 1990s home Christmas living room",
-      "Fireplace, stockings, warm lights, tree ornaments, wrapped gifts",
-      "Soft warm lighting filling the room"
-    ].join(", ");
-
     return [
-      "Hyper-realistic cozy 1990s home Christmas photo",
-      scene,
-      clothing,
+      "Hyper-realistic cozy 1990s home Christmas scene",
+      "Fireplace, stockings, warm lights, tree ornaments, wrapped gifts",
+      "Soft warm lighting filling the room",
+      "Change the outfit to a comfortable festive knit sweater outfit suitable for staying at home",
+      "Classic red or green 90s Christmas sweater with simple patterns",
+      "Ignore and remove any handheld objects from the input such as flowers, coffee cups, mugs, phones or glasses",
       cinematic,
       integration,
       framing,
       faceSafe,
-      identityLock
+      identityLockSingle
     ].join(", ");
   }
 
-  const clothingCouple = [
-    "Replace both outfits with perfectly matching cozy knitted Christmas sweaters",
-    "Deep red sweaters with cream Nordic patterns for both people",
-    "No bare shoulders, no camisole, no tank top, no business shirt",
-    "Original clothes from the input image must not be visible at all"
-  ].join(", ");
-
-  const sceneCouple = [
-    "Romantic 1990s Christmas couple scene",
-    "Soft fireplace glow, candles and Christmas tree in the background",
-    "Warm intimate lighting on both people"
-  ].join(", ");
-
   return [
     "Hyper-realistic romantic 1990s Christmas couple photo",
-    sceneCouple,
-    clothingCouple,
+    "Exactly two people in the scene, standing close together",
+    "Matching red knit Christmas sweaters with subtle 90s pattern for both",
+    "Soft fireplace glow, candles and Christmas tree lights in the background",
+    "Warm intimate lighting on both people",
+    "Hands relaxed or gently around each other, no bouquet, no mug, no cup, no phone",
+    "Ignore and remove any handheld objects from the input such as flowers, bouquets, coffee cups, mugs, phones or glasses",
     cinematic,
     integration,
     framing,
     faceSafe,
-    identityLock
+    identityLockCouple
   ].join(", ");
 }
 
@@ -262,11 +248,11 @@ function buildNegativePrompt(): string {
     "heavy blur, motion blur, ghosting, double exposure on the face",
     "passport photo, mugshot, id photo, floating head",
     "plain background, studio background, solid color backdrop",
-    "original outfit, same clothes as input, same outfit as input photo",
-    "tank top, camisole, sleeveless top, basic white shirt, business shirt, striped shirt",
-    "original background, same background as input, original room, same room as input",
     "tiktok filter, snapchat filter, beauty app filter",
     "logos, text, watermark",
+    "wedding bouquet, bouquet of flowers, flowers in hand, flower bunch",
+    "coffee cup, mug, teacup, paper cup, wine glass, champagne glass, beer glass, bottle in hand",
+    "microphone, phone in hand, selfie phone, camera in hand",
     "wrong Christmas context, summer scene, beach scene"
   ].join(", ");
 }
