@@ -83,39 +83,39 @@ function normalizeVibe(v: any): Vibe | null {
 function getPromptStrength(vibe: Vibe): number {
   switch (vibe) {
     case "COUPLE":
-      return 0.62;
+      return 0.55;
     case "PARTY":
-      return 0.7;
+      return 0.65;
     case "HOME":
-      return 0.66;
+      return 0.6;
     default:
-      return 0.66;
+      return 0.6;
   }
 }
 
 function getGuidanceScale(vibe: Vibe): number {
   switch (vibe) {
     case "COUPLE":
-      return 4.9;
-    case "PARTY":
       return 5.1;
+    case "PARTY":
+      return 5.3;
     case "HOME":
-      return 4.9;
+      return 5.1;
     default:
-      return 4.9;
+      return 5.1;
   }
 }
 
 function getNumInferenceSteps(vibe: Vibe): number {
   switch (vibe) {
     case "COUPLE":
-      return 34;
+      return 32;
     case "PARTY":
-      return 36;
+      return 34;
     case "HOME":
-      return 34;
+      return 32;
     default:
-      return 34;
+      return 32;
   }
 }
 
@@ -203,7 +203,7 @@ function buildPrompt(vibe: Vibe): string {
     "Hyper-realistic romantic 1990s Christmas couple photo",
     "Matching festive sweaters, soft fireplace glow, candles and Christmas tree",
     "Warm intimate lighting on both people",
-    "Both faces must match their original input perfectly with no stylization",
+    "Both faces must match input perfectly with no stylization",
     cinematic,
     integration,
     framing,
@@ -214,7 +214,7 @@ function buildPrompt(vibe: Vibe): string {
 
 function buildNegativePrompt(): string {
   return [
-    "extreme close up, face filling frame, selfie-style framing, tight crop, zoomed in face-only frame",
+    "extreme close up, face filling frame, selfie-style framing, tight crop, zoomed-in face-only framing",
     "ugly, disfigured, deformed, warped anatomy",
     "extra limbs, melted clothing, distorted bodies",
     "cartoon, anime, illustration, painting, sketch, comic",
