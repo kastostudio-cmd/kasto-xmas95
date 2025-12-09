@@ -137,7 +137,7 @@ function buildPrompt(vibe: Vibe): string {
 
   const identityLockCouple = [
     "There are exactly two real people in the input photo",
-    "Keep both original people from the input, do not merge or replace them",
+    "Keep both original people from the input, do not merge, replace or swap them",
     "Both faces must match their original input perfectly with no stylization",
     "No new faces, no extra people, no face swapping",
     "No beautification, no symmetry correction, no smoothing on either face",
@@ -189,13 +189,14 @@ function buildPrompt(vibe: Vibe): string {
   if (vibe === "PARTY") {
     return [
       "Hyper-realistic 1990s office Christmas party photo with direct flash",
+      "Completely ignore the original background and replace it with a busy 90s office Christmas party room",
       "Crowded room, people dancing blurred in the background",
       "Decorations: fairy lights, tinsel, garlands, big Christmas tree",
       "Lighting: harsh on-camera flash plus moody room shadows",
-      "Change the outfit to a stylish 1990s Christmas party look",
+      "Completely ignore the original outfit and fully replace clothing with a stylish 1990s Christmas party look",
       "For men: smart shirt or blazer, no satin blouse, no dress, no overly feminine clothing",
       "For women: festive but tasteful 90s party outfit, not overly revealing",
-      "Ignore and remove any handheld objects from the input such as flowers, coffee cups, mugs, phones or glasses",
+      "Change background, lighting and clothing strongly to match this description while keeping the face and hair identical to the input",
       cinematic,
       integration,
       framing,
@@ -207,11 +208,12 @@ function buildPrompt(vibe: Vibe): string {
   if (vibe === "HOME") {
     return [
       "Hyper-realistic cozy 1990s home Christmas scene",
+      "Completely ignore the original background and replace it with a warm living room scene",
       "Fireplace, stockings, warm lights, tree ornaments, wrapped gifts",
       "Soft warm lighting filling the room",
-      "Change the outfit to a comfortable festive knit sweater outfit suitable for staying at home",
+      "Completely ignore the original outfit and fully replace clothing with a comfortable festive knit sweater outfit suitable for staying at home",
       "Classic red or green 90s Christmas sweater with simple patterns",
-      "Ignore and remove any handheld objects from the input such as flowers, coffee cups, mugs, phones or glasses",
+      "Change background, lighting and clothing strongly to match this description while keeping the face and hair identical to the input",
       cinematic,
       integration,
       framing,
@@ -223,11 +225,13 @@ function buildPrompt(vibe: Vibe): string {
   return [
     "Hyper-realistic romantic 1990s Christmas couple photo",
     "Exactly two people in the scene, standing close together",
-    "Matching red knit Christmas sweaters with subtle 90s pattern for both",
+    "Completely ignore the original background and replace it with a cozy fireplace and Christmas tree setting",
+    "Matching red knit Christmas sweaters with subtle 90s pattern for both people",
     "Soft fireplace glow, candles and Christmas tree lights in the background",
     "Warm intimate lighting on both people",
+    "Completely ignore the original outfits and fully replace clothing with these matching sweaters while keeping faces and hairstyles identical to the input",
     "Hands relaxed or gently around each other, no bouquet, no mug, no cup, no phone",
-    "Ignore and remove any handheld objects from the input such as flowers, bouquets, coffee cups, mugs, phones or glasses",
+    "Change background, lighting and clothing strongly to match this description while keeping both faces and hair identical to the input",
     cinematic,
     integration,
     framing,
@@ -253,6 +257,7 @@ function buildNegativePrompt(): string {
     "wedding bouquet, bouquet of flowers, flowers in hand, flower bunch",
     "coffee cup, mug, teacup, paper cup, wine glass, champagne glass, beer glass, bottle in hand",
     "microphone, phone in hand, selfie phone, camera in hand",
+    "tripod, lighting stand, studio softbox, visible flash unit",
     "wrong Christmas context, summer scene, beach scene"
   ].join(", ");
 }
