@@ -204,7 +204,12 @@ export default function Home() {
         /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
       if (isIOS) {
-        window.open(dataUrl, "_blank");
+        const link = document.createElement("a");
+        link.href = dataUrl;
+        link.target = "_blank";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       } else {
         const link = document.createElement("a");
         link.href = dataUrl;
@@ -386,7 +391,14 @@ export default function Home() {
                   </div>
 
                   {outputUrl && !unlocked && (
-                    <div className="paywall-overlay">
+                    <div
+                      className="paywall-overlay"
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        zIndex: 5
+                      }}
+                    >
                       <div
                         style={{
                           fontSize: 12,
@@ -475,7 +487,7 @@ export default function Home() {
                   style={{
                     marginTop: 6,
                     position: "relative",
-                    zIndex: 10
+                    zIndex: 50
                   }}
                 >
                   <button
