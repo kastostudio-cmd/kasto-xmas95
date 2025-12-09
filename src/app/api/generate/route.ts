@@ -83,39 +83,39 @@ function normalizeVibe(v: any): Vibe | null {
 function getPromptStrength(vibe: Vibe): number {
   switch (vibe) {
     case "COUPLE":
-      return 0.55;
+      return 0.7;
     case "PARTY":
-      return 0.65;
+      return 0.78;
     case "HOME":
-      return 0.6;
+      return 0.74;
     default:
-      return 0.6;
+      return 0.74;
   }
 }
 
 function getGuidanceScale(vibe: Vibe): number {
   switch (vibe) {
     case "COUPLE":
-      return 5.1;
+      return 5.0;
     case "PARTY":
-      return 5.3;
+      return 5.2;
     case "HOME":
-      return 5.1;
+      return 5.0;
     default:
-      return 5.1;
+      return 5.0;
   }
 }
 
 function getNumInferenceSteps(vibe: Vibe): number {
   switch (vibe) {
     case "COUPLE":
-      return 32;
-    case "PARTY":
       return 34;
+    case "PARTY":
+      return 36;
     case "HOME":
-      return 32;
+      return 34;
     default:
-      return 32;
+      return 34;
   }
 }
 
@@ -158,7 +158,9 @@ function buildPrompt(vibe: Vibe): string {
     "Perfect physical integration into the room",
     "Correct perspective, scale, shadow and lighting match",
     "Subject stands or sits naturally with proper grounding",
-    "No floating, no cutout effect"
+    "No floating, no cutout effect",
+    "Completely replace the original background with a new Christmas environment",
+    "Original background, walls and furniture from the input image must not be visible"
   ].join(", ");
 
   const framing = [
@@ -171,12 +173,24 @@ function buildPrompt(vibe: Vibe): string {
   ].join(", ");
 
   if (vibe === "PARTY") {
-    return [
-      "Hyper-realistic 1990s office Christmas party photo with direct flash",
-      "Crowded room, people dancing blurred in background",
+    const clothing = [
+      "Change the outfit into stylish 1990s Christmas office party clothes",
+      "Long-sleeve satin or velvet dress or shirt in deep red, green or black with subtle sparkle",
+      "No casual tank tops or basic shirts visible",
+      "Original clothes from the input image must not be visible at all"
+    ].join(", ");
+
+    const scene = [
+      "Crowded 1990s office Christmas party photo with direct flash",
+      "People dancing blurred in the background",
       "Decorations: fairy lights, tinsel, garlands, big Christmas tree",
-      "Lighting: harsh flash plus moody room shadows",
-      "Outfit stylish, festive and slightly dressed up for a party",
+      "Lighting: harsh flash plus moody room shadows"
+    ].join(", ");
+
+    return [
+      "Hyper-realistic 1990s office Christmas party scene",
+      scene,
+      clothing,
       cinematic,
       integration,
       framing,
@@ -186,11 +200,23 @@ function buildPrompt(vibe: Vibe): string {
   }
 
   if (vibe === "HOME") {
-    return [
-      "Hyper-realistic cozy 1990s home Christmas scene",
+    const clothing = [
+      "Replace the outfit with cozy 1990s knitted Christmas sweaters",
+      "Red, cream and forest green color palette",
+      "No bare shoulders, no camisole, no tank top",
+      "Original outfit from the input photo must not be visible"
+    ].join(", ");
+
+    const scene = [
+      "Cozy 1990s home Christmas living room",
       "Fireplace, stockings, warm lights, tree ornaments, wrapped gifts",
-      "Soft warm lighting filling the room",
-      "Comfortable festive sweater outfit suitable for staying at home",
+      "Soft warm lighting filling the room"
+    ].join(", ");
+
+    return [
+      "Hyper-realistic cozy 1990s home Christmas photo",
+      scene,
+      clothing,
       cinematic,
       integration,
       framing,
@@ -199,11 +225,23 @@ function buildPrompt(vibe: Vibe): string {
     ].join(", ");
   }
 
+  const clothingCouple = [
+    "Replace both outfits with perfectly matching cozy knitted Christmas sweaters",
+    "Deep red sweaters with cream Nordic patterns for both people",
+    "No bare shoulders, no camisole, no tank top, no business shirt",
+    "Original clothes from the input image must not be visible at all"
+  ].join(", ");
+
+  const sceneCouple = [
+    "Romantic 1990s Christmas couple scene",
+    "Soft fireplace glow, candles and Christmas tree in the background",
+    "Warm intimate lighting on both people"
+  ].join(", ");
+
   return [
     "Hyper-realistic romantic 1990s Christmas couple photo",
-    "Matching festive sweaters, soft fireplace glow, candles and Christmas tree",
-    "Warm intimate lighting on both people",
-    "Both faces must match input perfectly with no stylization",
+    sceneCouple,
+    clothingCouple,
     cinematic,
     integration,
     framing,
@@ -214,7 +252,7 @@ function buildPrompt(vibe: Vibe): string {
 
 function buildNegativePrompt(): string {
   return [
-    "extreme close up, face filling frame, selfie-style framing, tight crop, zoomed-in face-only framing",
+    "extreme close up, face filling frame, selfie-style framing, tight crop, zoomed in face-only frame",
     "ugly, disfigured, deformed, warped anatomy",
     "extra limbs, melted clothing, distorted bodies",
     "cartoon, anime, illustration, painting, sketch, comic",
@@ -224,6 +262,9 @@ function buildNegativePrompt(): string {
     "heavy blur, motion blur, ghosting, double exposure on the face",
     "passport photo, mugshot, id photo, floating head",
     "plain background, studio background, solid color backdrop",
+    "original outfit, same clothes as input, same outfit as input photo",
+    "tank top, camisole, sleeveless top, basic white shirt, business shirt, striped shirt",
+    "original background, same background as input, original room, same room as input",
     "tiktok filter, snapchat filter, beauty app filter",
     "logos, text, watermark",
     "wrong Christmas context, summer scene, beach scene"
