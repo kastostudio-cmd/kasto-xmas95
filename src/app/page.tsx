@@ -138,14 +138,21 @@ export default function Home() {
 
       if (!res.ok) {
         const errJson = await res.json().catch(() => null);
-        const message = errJson?.error || "Unknown error from API";
-        setStatusMessage("Status: " + message, { error: true });
+        const apiMsg = errJson?.error;
+        let friendly = "Status: Generation failed. Please try again.";
+        if (res.status === 429) {
+          friendly =
+            "Status: XMAS95 is very busy right now. Please wait a minute and try again 🎄";
+        } else if (apiMsg) {
+          friendly = "Status: " + apiMsg;
+        }
+        setStatusMessage(friendly, { error: true });
         return;
       }
 
       const data = await res.json();
       if (!data || !data.output) {
-        setStatusMessage("Status: No image returned from API.", {
+        setStatusMessage("Status: No image returned from XMAS95 engine.", {
           error: true
         });
         return;
@@ -154,7 +161,7 @@ export default function Home() {
       setOutputUrl(data.output as string);
       setUnlocked(false);
       setShowShareHint(false);
-      setStatusMessage("Status: Xmas95 photo ready. Unlock to download.");
+      setStatusMessage("Status: Xmas95 photo ready. Enter code to download.");
       const previewContainer = document.querySelector(
         ".preview-wrapper"
       ) as HTMLElement | null;
@@ -163,16 +170,26 @@ export default function Home() {
       }
     } catch (err) {
       console.error(err);
-      setStatusMessage("Status: Generation failed. Check console.", {
-        error: true
-      });
+      setStatusMessage(
+        "Status: Generation failed. Please check your connection and try again.",
+        { error: true }
+      );
     } finally {
       setIsLoading(false);
     }
   }
 
   function handleUnlock() {
-    if (codeInput.trim().toUpperCase() === UNLOCK_CODE) {
+    const entered = codeInput.trim().toUpperCase();
+    if (!entered) {
+      setUnlocked(false);
+      setStatusMessage("Status: Please enter the unlock code.", {
+        error: true
+      });
+      return;
+    }
+
+    if (entered === UNLOCK_CODE) {
       setUnlocked(true);
       setStatusMessage("Status: Unlocked. You can download your photo now.");
       setTimeout(() => {
@@ -182,7 +199,7 @@ export default function Home() {
         if (btn) {
           btn.scrollIntoView({ behavior: "smooth", block: "center" });
         }
-      }, 50);
+      }, 80);
     } else {
       setUnlocked(false);
       setStatusMessage("Status: Invalid code. Please check your purchase.", {
@@ -231,11 +248,11 @@ export default function Home() {
     if (!outputUrl) return;
     const modeLabel =
       selectedMode === "party"
-        ? "Party '95"
+        ? "party '95"
         : selectedMode === "home"
-        ? "Home '95"
-        : "Couple '95";
-    const caption = `turned my photo into a 1995 christmas ${modeLabel.toLowerCase()} shot with XMAS95 🎄 try yours at xmas95.app #xmas95 @kastostudio`;
+        ? "home '95"
+        : "couple '95";
+    const caption = `turned my photo into a 1995 christmas ${modeLabel} shot with XMAS95 🎄 try yours at xmas95.app #xmas95 @kastostudio`;
     try {
       if (navigator && "clipboard" in navigator) {
         await navigator.clipboard.writeText(caption);
